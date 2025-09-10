@@ -103,7 +103,6 @@ linters:
       - third_party$
       - builtin$
       - examples$
-      - api-clients/elevenlabs
 formatters:
   enable:
     - gci
@@ -117,4 +116,3 @@ formatters:
       - third_party$
       - builtin$
       - examples$
-      - api-clients/elevenlabs
