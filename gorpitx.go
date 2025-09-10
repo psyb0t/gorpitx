@@ -56,6 +56,8 @@ func newRPITX() *RPITX {
 		commander: commander.New(),
 		modules: map[ModuleName]Module{
 			ModuleNamePIFMRDS: &PIFMRDS{},
+			ModuleNameTUNE:    &TUNE{},
+			ModuleNameMORSE:   &MORSE{},
 		},
 	}
 }

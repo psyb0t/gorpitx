@@ -124,8 +124,9 @@ func TestRPITX_GetInstance(t *testing.T) {
 	// Should return same instance (singleton)
 	assert.Same(t, rpitx1, rpitx2)
 
-	// Should have pifmrds module registered
+	// Should have pifmrds and tune modules registered
 	assert.Contains(t, rpitx1.modules, ModuleNamePIFMRDS)
+	assert.Contains(t, rpitx1.modules, ModuleNameTUNE)
 }
 
 func TestRPITX_getMockExecCmd(t *testing.T) {
@@ -165,6 +166,145 @@ func TestRPITX_getMockExecCmd_CommandContent(t *testing.T) {
 	assert.Contains(t, cmdArgs[1], "-freq 107.9 -ps TEST FM")
 	assert.Contains(t, cmdArgs[1], "sleep 1")
 	assert.Contains(t, cmdArgs[1], "done")
+}
+
+func TestRPITX_Exec_TuneModule(t *testing.T) {
+	tests := []struct {
+		name        string
+		moduleName  ModuleName
+		args        map[string]any
+		expectError bool
+	}{
+		{
+			name:       "valid tune module",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency": 434000000.0, // 434 MHz in Hz
+			},
+			expectError: false,
+		},
+		{
+			name:       "tune module with all parameters",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency":     434000000.0,
+				"exitImmediate": true,
+				"ppm":           2.5,
+			},
+			expectError: false,
+		},
+		{
+			name:       "tune module missing frequency",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"exitImmediate": true,
+			},
+			expectError: true,
+		},
+		{
+			name:       "tune module invalid frequency",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency": -434000000.0,
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module valid",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"rate":      20,
+				"message":   "CQ DE N0CALL",
+			},
+			expectError: false,
+		},
+		{
+			name:       "morse module with different params",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 7040000.0,
+				"rate":      15,
+				"message":   "HELLO WORLD",
+			},
+			expectError: false,
+		},
+		{
+			name:       "morse module missing frequency",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"rate":    20,
+				"message": "TEST",
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module missing rate",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"message":   "TEST",
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module missing message",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"rate":      20,
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module invalid frequency",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": -14070000.0,
+				"rate":      20,
+				"message":   "TEST",
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set ENV=dev to test mock execution  
+			t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+			// Create RPITX instance with mock commander
+			mockCommander := commander.NewMock()
+			rpitx := &RPITX{
+				modules: map[string]Module{
+					ModuleNamePIFMRDS: &PIFMRDS{},
+					ModuleNameTUNE:    &TUNE{},
+					ModuleNameMORSE:   &MORSE{},
+				},
+				commander: mockCommander,
+			}
+
+			if !tt.expectError {
+				// Mock successful execution for valid test cases
+				mockCommander.ExpectWithMatchers("sh", commander.Exact("-c"), commander.Any()).ReturnError(context.DeadlineExceeded)
+			}
+
+			argsBytes, err := json.Marshal(tt.args)
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			err = rpitx.Exec(ctx, tt.moduleName, argsBytes, 1*time.Second)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			// Should timeout in dev mode (this is expected)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "context deadline exceeded")
+		})
+	}
 }
 
 // Additional coverage tests for missing scenarios

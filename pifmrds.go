@@ -69,7 +69,8 @@ func (m *PIFMRDS) buildArgs() []string {
 	var args []string
 
 	// Add frequency argument (required)
-	args = append(args, "-freq", strconv.FormatFloat(m.Freq, 'f', 1, 64))
+	args = append(args, "-freq",
+		strconv.FormatFloat(m.Freq, 'f', 1, 64))
 
 	// Add audio argument (required)
 	args = append(args, "-audio", m.Audio)
@@ -91,7 +92,8 @@ func (m *PIFMRDS) buildArgs() []string {
 
 	// Add PPM argument
 	if m.PPM != nil {
-		args = append(args, "-ppm", strconv.FormatFloat(*m.PPM, 'f', -1, 64))
+		args = append(args, "-ppm",
+			strconv.FormatFloat(*m.PPM, 'f', -1, 64))
 	}
 
 	// Add control pipe argument
@@ -147,11 +149,13 @@ func (m *PIFMRDS) validateFreq() error {
 	}
 
 	// RPiTX frequency range validation using utility functions
-	if !isValidFreqMHz(m.Freq) {
+	// Convert MHz to Hz for validation since isValidFreqHz expects Hz
+	freqHz := mHzToHz(m.Freq)
+	if !isValidFreqHz(freqHz) {
 		return ctxerrors.Wrapf(
 			ErrFreqOutOfRange,
 			"(%d kHz to %.0f MHz), got: %f",
-			minFreqKHz, maxFreqKHz/kHzToMHzDivisor, m.Freq,
+			minFreqKHz, getMaxFreqMHzDisplay(), m.Freq,
 		)
 	}
 
@@ -176,7 +180,11 @@ func (m *PIFMRDS) validateAudio() error {
 
 	// Check if audio file exists (no stdin support for now)
 	if _, err := os.Stat(m.Audio); os.IsNotExist(err) {
-		return ctxerrors.Wrapf(ErrAudioNotFound, "file: %s", m.Audio)
+		return ctxerrors.Wrapf(
+			ErrAudioNotFound,
+			"file: %s",
+			m.Audio,
+		)
 	}
 
 	return nil

@@ -16,6 +16,7 @@ type Config struct {
 
 func parseConfig() (Config, error) {
 	cfg := Config{}
+
 	gonfiguration.SetDefaults(map[string]any{
 		envVarNameGorpitxPath: defaultPath,
 	})
