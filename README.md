@@ -192,12 +192,40 @@ if err != nil {
 ## 🎛️ Process Control
 
 ### Stream Output
+
+**Option 1: Async Streaming (Recommended)**
 ```go
 stdout := make(chan string, 100)
 stderr := make(chan string, 100)
 
-// Start streaming (only works during execution)
-rpitx.StreamOutputs(stdout, stderr)
+// Start async streaming (can be called before execution)
+rpitx.StreamOutputsAsync(stdout, stderr)
+
+// Start output collection
+go func() {
+    for line := range stdout {
+        fmt.Println("STDOUT:", line)
+    }
+}()
+
+// Execute - streaming will automatically start when execution begins
+err := rpitx.Exec(ctx, gorpitx.ModuleNameMORSE, argsJSON, 30*time.Second)
+```
+
+**Option 2: Manual Streaming (Requires precise timing)**
+```go
+stdout := make(chan string, 100)
+stderr := make(chan string, 100)
+
+// Start execution in goroutine
+go func() {
+    err := rpitx.Exec(ctx, gorpitx.ModuleNameMORSE, argsJSON, 30*time.Second)
+    // Handle error
+}()
+
+// Wait for execution to start, then stream
+time.Sleep(100 * time.Millisecond)
+rpitx.StreamOutputs(stdout, stderr)  // Only works during execution
 
 go func() {
     for line := range stdout {
