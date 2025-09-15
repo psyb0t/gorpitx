@@ -144,7 +144,10 @@ func (r *RPITX) cleanupExecution(ctx context.Context) {
 	r.isExecuting.Store(false)
 }
 
-func (r *RPITX) prepareCommand(name ModuleName, args []byte) (string, []string, error) {
+func (r *RPITX) prepareCommand(
+	name ModuleName,
+	args []byte,
+) (string, []string, error) {
 	if !r.IsSupportedModule(name) {
 		return "", nil, ctxerrors.Wrap(ErrUnknownModule, name)
 	}
@@ -169,17 +172,21 @@ func (r *RPITX) prepareCommand(name ModuleName, args []byte) (string, []string, 
 
 	binaryPath := filepath.Join(r.config.Path, name)
 
-	// Wrap with sudo stdbuf for line buffering and proper permissions
-	cmdName = "sudo"
+	// Wrap with stdbuf for line buffering
+	cmdName = "stdbuf"
 
-	cmdArgs = append([]string{"stdbuf", "-oL", binaryPath}, parsedArgs...)
+	cmdArgs = append([]string{"-oL", binaryPath}, parsedArgs...)
 
 	logrus.Debugf("production command prepared: %s %v", cmdName, cmdArgs)
 
 	return cmdName, cmdArgs, nil
 }
 
-func (r *RPITX) startProcess(ctx context.Context, cmdName string, cmdArgs []string) error {
+func (r *RPITX) startProcess(
+	ctx context.Context,
+	cmdName string,
+	cmdArgs []string,
+) error {
 	r.processMu.Lock()
 	process, err := r.commander.Start(
 		ctx,
@@ -250,10 +257,7 @@ func (r *RPITX) StreamOutputsAsync(stdout, stderr chan<- string) {
 	}()
 }
 
-func (r *RPITX) Stop(
-	ctx context.Context,
-	timeout time.Duration,
-) error {
+func (r *RPITX) Stop(ctx context.Context) error {
 	if !r.isExecuting.Load() {
 		return ErrNotExecuting
 	}
@@ -263,7 +267,7 @@ func (r *RPITX) Stop(
 	r.processMu.RUnlock()
 
 	if process != nil {
-		if err := process.Stop(ctx, timeout); err != nil {
+		if err := process.Stop(ctx); err != nil {
 			return ctxerrors.Wrap(err, "failed to stop process")
 		}
 	}
@@ -272,18 +276,20 @@ func (r *RPITX) Stop(
 }
 
 // waitWithTimeout waits for process completion with manual timeout handling.
-func (r *RPITX) waitWithTimeout(ctx context.Context, timeout time.Duration) error {
-	done := make(chan error, 1)
+func (r *RPITX) waitWithTimeout(
+	ctx context.Context,
+	timeout time.Duration,
+) error {
+	errCh := make(chan error, 1)
 
 	// Start waiting for process in goroutine
 	go func() {
-		err := r.process.Wait()
-		done <- err
+		errCh <- r.process.Wait()
 	}()
 
 	// Wait for either completion or timeout
 	select {
-	case err := <-done:
+	case err := <-errCh:
 		// Process completed normally
 		if err != nil {
 			return ctxerrors.Wrap(err, "failed to wait for process")
@@ -298,13 +304,14 @@ func (r *RPITX) waitWithTimeout(ctx context.Context, timeout time.Duration) erro
 		stopCtx, cancel := context.WithTimeout(ctx, gracefulStopTimeout)
 		defer cancel()
 
-		err := r.Stop(stopCtx, gracefulStopTimeout)
+		err := r.Stop(stopCtx)
 		if err != nil {
-			logrus.WithError(err).Warn("failed to gracefully stop process after timeout")
+			logrus.WithError(err).
+				Warn("failed to gracefully stop process after timeout")
 		}
 
 		// Wait for the stop to complete
-		if err = <-done; err != nil {
+		if err = <-errCh; err != nil {
 			// Check if this was our expected timeout termination
 			if errors.Is(err, commonerrors.ErrTerminated) ||
 				errors.Is(err, commonerrors.ErrKilled) {

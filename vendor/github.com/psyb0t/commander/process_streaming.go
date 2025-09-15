@@ -15,16 +15,22 @@ func (p *process) Stream(stdout, stderr chan<- string) {
 		stderr: stderr,
 	})
 
-	logrus.Debugf("added new stream channels - total active streams: %d", len(p.streamChans))
+	logrus.Debugf(
+		"added new stream channels - total active streams: %d",
+		len(p.streamChans),
+	)
 }
 
-// discardInternalOutput continuously drains internal channels to prevent blocking
+// discardInternalOutput continuously drains internal channels
+// to prevent blocking
 // Only sends to user channels if they exist, otherwise discards everything
 func (p *process) discardInternalOutput() {
 	logrus.Debug("starting output discard goroutine")
 
 	defer func() {
-		logrus.Debug("output discard goroutine finishing, closing stream channels")
+		logrus.Debug(
+			"output discard goroutine finishing, closing stream channels",
+		)
 		p.closeStreamChannels()
 	}()
 
@@ -34,13 +40,21 @@ func (p *process) discardInternalOutput() {
 	for {
 		select {
 		case <-p.doneCh:
-			logrus.Debugf("output discard goroutine stopping - processed %d stdout, %d stderr lines", stdoutCount, stderrCount)
+			logrus.Debugf(
+				"output discard goroutine stopping - "+
+					"processed %d stdout, %d stderr lines",
+				stdoutCount,
+				stderrCount,
+			)
 
 			return
 
 		case line, ok := <-p.internalStdout:
 			if !ok {
-				logrus.Debugf("stdout channel closed after %d lines, draining stderr", stdoutCount)
+				logrus.Debugf(
+					"stdout channel closed after %d lines, draining stderr",
+					stdoutCount,
+				)
 				p.drainStderr()
 
 				return
@@ -52,7 +66,10 @@ func (p *process) discardInternalOutput() {
 
 		case line, ok := <-p.internalStderr:
 			if !ok {
-				logrus.Debugf("stderr channel closed after %d lines", stderrCount)
+				logrus.Debugf(
+					"stderr channel closed after %d lines",
+					stderrCount,
+				)
 
 				continue
 			}

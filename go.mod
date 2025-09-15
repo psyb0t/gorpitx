@@ -5,9 +5,9 @@ go 1.24.6
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 require (
-	github.com/psyb0t/commander v0.1.0
-	github.com/psyb0t/common-go v0.0.0-20250909204736-0a8bad2e378d
-	github.com/psyb0t/ctxerrors v0.1.0
+	github.com/psyb0t/commander v0.3.0
+	github.com/psyb0t/common-go v0.0.0-20250914061813-a517b076b64a
+	github.com/psyb0t/ctxerrors v0.2.0
 	github.com/psyb0t/gonfiguration v1.2.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1

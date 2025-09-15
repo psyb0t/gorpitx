@@ -49,18 +49,21 @@ type Process interface {
     Wait() error                                            // Wait for the carnage to finish ⏰💀
     StdinPipe() (io.WriteCloser, error)                    // Feed the machine - VIOLATE EVERYTHING! 🚰🔪
     Stream(stdout, stderr chan<- string)                    // Stream the chaos live - witness the violence! 🌍💻📡⚡
-    Stop(ctx context.Context, timeout time.Duration) error  // They picked the wrong god to pray to! ⚰️👹💀
+    Stop(ctx context.Context) error                         // They picked the wrong god to pray to! ⚰️👹💀
     Kill(ctx context.Context) error                        // Somebody stop me from this beautiful murder! 🔫💥💚
+    PID() int                                               // Get the process ID - know thy enemy! 🎯👹🔢
 }
 ```
 
 ### Options ⚙️👹 - Pimp your malevolent machinery 🔥💚
+
+**Command Execution Options:**
 ```go
 func WithStdin(stdin io.Reader) Option        // Feed the beast - it's party time! 🍽️👹🎉
 func WithEnv(env []string) Option            // Corrupt the environment - spawn the chaos! 🌍💻🔥👺
 func WithDir(dir string) Option              // Choose your battlefield - violate everything holy! 📁🗂️⚰️
-func WithTimeout(timeout time.Duration) Option // Set your death timer - they picked the wrong god! ⏰💀🔥
 ```
+
 
 ## Basic Usage 💚⚔️ - The fundamentals of digital violence 🔥💀
 
@@ -113,7 +116,17 @@ func main() {
 Want to see what's happening while it's happening? Here's how you stream dat shit live - it's well good:
 
 ```go
-func streamingExample() {
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/psyb0t/commander"
+)
+
+func main() {
     cmd := commander.New()
     ctx := context.Background()
 
@@ -157,7 +170,20 @@ func streamingExample() {
 
 ### Graceful Termination
 ```go
-func gracefulTermination() {
+package main
+
+import (
+    "context"
+    "errors"
+    "fmt"
+    "log"
+    "time"
+
+    "github.com/psyb0t/commander"
+    commonerrors "github.com/psyb0t/common-go/errors"
+)
+
+func main() {
     cmd := commander.New()
     ctx := context.Background()
 
@@ -172,7 +198,9 @@ func gracefulTermination() {
 
     // Now shut it down gracefully (SIGTERM first, SIGKILL after 5 seconds if needed)
     fmt.Println("Shutting down gracefully...")
-    err = proc.Stop(ctx, 5*time.Second)
+    stopCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+    defer cancel()
+    err = proc.Stop(stopCtx)
     
     if err == nil {
         fmt.Println("Process stopped cleanly")
@@ -204,14 +232,68 @@ func justKillIt() {
 }
 ```
 
+## Custom Kill Signals 💀⚔️ - Choose your weapon of destruction
+
+### Using Custom Signals for Graceful Termination
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "syscall"
+    "time"
+
+    "github.com/psyb0t/commander"
+)
+
+func killWithStyle() {
+    cmd := commander.New()
+    ctx := context.Background()
+
+    proc, err := cmd.Start(ctx, "your-daemon", []string{"--config", "prod.yml"})
+    if err != nil {
+        panic(err)
+    }
+
+    // Give it 10 seconds to shut down gracefully with SIGINT instead of SIGTERM
+    stopCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+    defer cancel()
+    
+    err = proc.Stop(stopCtx)
+    if err != nil {
+        fmt.Printf("Process stopped with: %v\n", err)
+    }
+}
+
+func useUserSignals() {
+    cmd := commander.New()
+    ctx := context.Background()
+
+    proc, err := cmd.Start(ctx, "nginx", []string{"-g", "daemon off;"})
+    if err != nil {
+        panic(err)
+    }
+
+    // Nginx responds to SIGUSR1 for graceful reload
+    stopCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+    defer cancel()
+    
+    err = proc.Stop(stopCtx)
+    if err != nil {
+        fmt.Printf("Nginx graceful reload result: %v\n", err)
+    }
+}
+```
+
 ## Timeout Handling - Patience is for suckers
 
-### Context Timeout
+### Context-Based Timeouts (The Right Way™️)
 ```go
 func contextTimeout() {
     cmd := commander.New()
     
-    // This will timeout after 2 seconds
+    // This will timeout after 2 seconds - context controls everything!
     ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
     defer cancel()
 
@@ -220,23 +302,51 @@ func contextTimeout() {
         fmt.Println("Bingo! Command timed out like a champ!")
     }
 }
-```
 
-### Option Timeout
-```go
-func optionTimeout() {
+// Stop with custom timeout - no more redundant bullshit!
+func stopWithTimeout() {
     cmd := commander.New()
     ctx := context.Background()
-
-    // Same shit, different toilet - LIKE A GLOVE!
-    err := cmd.Run(ctx, "sleep", []string{"10"}, 
-        commander.WithTimeout(2*time.Second))
     
-    if errors.Is(err, commonerrors.ErrTimeout) {
-        fmt.Println("Timeout option worked! Do NOT go in there!")
+    proc, _ := cmd.Start(ctx, "sleep", []string{"100"})
+    
+    // Give it 3 seconds to die gracefully, then SIGKILL the fucker
+    stopCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+    defer cancel()
+    
+    err := proc.Stop(stopCtx) // Clean as fuck - context controls timeout!
+    if errors.Is(err, commonerrors.ErrTerminated) {
+        fmt.Println("Process gracefully terminated!")
+    } else if errors.Is(err, commonerrors.ErrKilled) {
+        fmt.Println("Process was force killed after timeout!")
     }
 }
 ```
+
+
+## API Migration Guide 🔄 - From the old shit to the new hotness
+
+**Old API (Redundant bullshit):**
+```go
+// OLD - Don't use this crap anymore!
+err := proc.Stop(ctx, 5*time.Second) // WTF? Both ctx AND timeout?
+```
+
+**New API (Clean as fuck):**
+```go
+// NEW - Context controls everything like a boss!
+stopCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+defer cancel()
+err := proc.Stop(stopCtx) // One source of truth for timeouts
+
+// Graceful stop with SIGTERM then SIGKILL
+err := proc.Stop(stopCtx)
+
+// No timeout? No problem - immediate force kill
+err := proc.Stop(context.Background()) // No deadline = force kill
+```
+
+**Why the change?** Because having both `ctx` and `timeout` parameters was fucking redundant! Now the user has full control - use `context.WithTimeout()`, `context.WithDeadline()`, `context.WithCancel()`, or any other context pattern. Much cleaner and follows Go idioms properly.
 
 ## Input and Environment - Feeding time at the process zoo
 
@@ -307,11 +417,14 @@ func kitchenSinkExample() {
 
     input := strings.NewReader("some input data")
     
-    stdout, stderr, err := cmd.Output(ctx, "cat", nil,
+    // Use context timeout instead of WithTimeout option
+    timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+    defer cancel()
+
+    stdout, stderr, err := cmd.Output(timeoutCtx, "cat", nil,
         commander.WithStdin(input),
         commander.WithDir("/tmp"),
-        commander.WithEnv([]string{"LANG=en_US.UTF-8"}),
-        commander.WithTimeout(10*time.Second))
+        commander.WithEnv([]string{"LANG=en_US.UTF-8"}))
     
     if err != nil {
         log.Fatal("Kitchen sink failed:", err)
@@ -645,8 +758,9 @@ func deployApp(cmd commander.Commander) error {
     }
 
     fmt.Println("🧪 Running tests...")
-    err = cmd.Run(ctx, "go", []string{"test", "./..."},
-        commander.WithTimeout(5*time.Minute))
+    testCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+    defer cancel()
+    err = cmd.Run(testCtx, "go", []string{"test", "./..."})
     if err != nil {
         return fmt.Errorf("tests failed: %w", err)
     }
@@ -658,8 +772,9 @@ func deployApp(cmd commander.Commander) error {
     }
 
     fmt.Println("🚀 Pushing to registry...")
-    err = cmd.Run(ctx, "docker", []string{"push", "myapp:latest"},
-        commander.WithTimeout(10*time.Minute))
+    pushCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+    defer cancel()
+    err = cmd.Run(pushCtx, "docker", []string{"push", "myapp:latest"})
     if err != nil {
         return fmt.Errorf("docker push failed: %w", err)
     }
@@ -703,7 +818,9 @@ func monitorLogs(cmd commander.Commander) error {
     // Stop monitoring after 1 hour
     time.Sleep(1 * time.Hour)
     
-    return proc.Stop(ctx, 5*time.Second)
+    stopCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+    defer cancel()
+    return proc.Stop(stopCtx)
 }
 ```
 

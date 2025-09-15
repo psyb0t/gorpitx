@@ -536,9 +536,9 @@ func TestRPITX_ProductionExecution_Success(t *testing.T) {
 	argsBytes, err := json.Marshal(args)
 	require.NoError(t, err)
 
-	// Mock successful production execution with sudo stdbuf wrapper
-	mockCommander.Expect("sudo",
-		"stdbuf", "-oL", "$HOME/rpitx/pifmrds",
+	// Mock successful production execution with stdbuf wrapper
+	mockCommander.Expect("stdbuf",
+		"-oL", "$HOME/rpitx/pifmrds",
 		"-freq", "107.9",
 		"-audio", ".fixtures/test.wav",
 		"-pi", "1234",
@@ -568,7 +568,7 @@ func TestRPITX_ProductionExecution_StartFailure(t *testing.T) {
 	}
 
 	// Mock start failure by returning error from execute
-	mockCommander.Expect("sudo", "stdbuf", "-oL", "./pifmrds", "-freq", "107.9", "-audio", ".fixtures/test.wav").ReturnError(assert.AnError)
+	mockCommander.Expect("stdbuf", "-oL", "./pifmrds", "-freq", "107.9", "-audio", ".fixtures/test.wav").ReturnError(assert.AnError)
 
 	args := map[string]any{
 		"freq":  107.9,
@@ -723,7 +723,7 @@ func TestRPITX_StopWithoutExecution(t *testing.T) {
 	rpitx := GetInstance()
 
 	ctx := context.Background()
-	err := rpitx.Stop(ctx, 1*time.Second)
+	err := rpitx.Stop(ctx)
 
 	// Should return ErrNotExecuting
 	assert.ErrorIs(t, err, ErrNotExecuting)
@@ -798,20 +798,20 @@ func TestRPITX_PrepareCommand_Production(t *testing.T) {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	expectedCmdName := "sudo"
+	expectedCmdName := "stdbuf"
 	if cmdName != expectedCmdName {
 		t.Errorf("Expected cmdName to be '%s', got: %s", expectedCmdName, cmdName)
 	}
 
-	// Check that cmdArgs contains stdbuf wrapper and parsed arguments
-	expectedArgs := []string{"stdbuf", "-oL", "/home/test/rpitx/pifmrds", "-freq", "100.0", "-audio", ".fixtures/test.wav"}
+	// Check that cmdArgs contains line buffering and parsed arguments
+	expectedArgs := []string{"-oL", "/home/test/rpitx/pifmrds", "-freq", "100.0", "-audio", ".fixtures/test.wav"}
 	if len(cmdArgs) < len(expectedArgs) {
 		t.Errorf("Expected cmdArgs to have at least %d elements, got: %v", len(expectedArgs), cmdArgs)
 	}
 
 	// Check key elements are present
-	if !contains(cmdArgs, "stdbuf") || !contains(cmdArgs, "-oL") || !contains(cmdArgs, "/home/test/rpitx/pifmrds") {
-		t.Errorf("Expected cmdArgs to contain stdbuf wrapper, got: %v", cmdArgs)
+	if !contains(cmdArgs, "-oL") || !contains(cmdArgs, "/home/test/rpitx/pifmrds") {
+		t.Errorf("Expected cmdArgs to contain stdbuf args, got: %v", cmdArgs)
 	}
 
 	t.Logf("Production command: %s %v", cmdName, cmdArgs)
