@@ -8,8 +8,10 @@ Tired of wrestling with raw C binaries like a goddamn caveman? This badass Go in
 
 Executes rpitx modules through Go without the usual clusterfuck of manual process wrangling. Supports dev mode (fake transmission for testing) and production mode (actual RF carnage).
 
-**Current Module:**
+**Implemented Modules:**
 - **pifmrds**: FM broadcasting with RDS data (frequency in MHz) ✅ Done and dusted
+- **tune**: Simple carrier generation (frequency in Hz) ✅ Fresh off the press
+- **morse**: Morse code transmission (frequency in Hz) ✅ Fresh implementation
 
 **Architecture Highlights:**
 - Singleton pattern with `GetInstance()` because global state done right
@@ -50,8 +52,9 @@ func main() {
     argsJSON, _ := json.Marshal(args)
     ctx := context.Background()
     
-    // Execute with timeout (because infinite loops are evil)
+    // Execute with timeout (because infinite loops are evil)  
     err := rpitx.Exec(ctx, gorpitx.ModuleNamePIFMRDS, argsJSON, 5*time.Minute)
+    // Or use gorpitx.ModuleNameTUNE for carrier or gorpitx.ModuleNameMORSE for morse
     if err != nil {
         panic(err)  // Shit hit the fan
     }
@@ -103,15 +106,126 @@ type PIFMRDS struct {
 - `RT`: Max 64 characters
 - `ControlPipe`: Must exist if specified (create with `mkfifo`)
 
+## 📻 TUNE Module Configuration
+
+```go
+type TUNE struct {
+    Frequency     *float64 // Hz, required, 50kHz-1500MHz
+    ExitImmediate *bool    // Exit without killing carrier (optional) 
+    PPM           *float64 // Clock correction ppm > 0 (optional)
+}
+```
+
+**Validation Rules:**
+- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `ExitImmediate`: Optional boolean, exits without killing carrier when true
+- `PPM`: Optional, must be positive if specified
+
+**Example Usage:**
+```go
+import (
+    "context"
+    "encoding/json"
+    "time"
+    "github.com/psyb0t/gorpitx"
+)
+
+args := gorpitx.TUNE{
+    Frequency:     floatPtr(434000000), // 434 MHz in Hz
+    ExitImmediate: boolPtr(true),       // Exit without killing carrier
+    PPM:           floatPtr(2.5),       // Clock correction
+}
+
+argsJSON, _ := json.Marshal(args)
+ctx := context.Background()
+
+// Execute carrier tune
+err := rpitx.Exec(ctx, gorpitx.ModuleNameTUNE, argsJSON, 0) // No timeout
+if err != nil {
+    panic(err)
+}
+
+func floatPtr(f float64) *float64 { return &f }
+func boolPtr(b bool) *bool { return &b }
+```
+
+## ⚡ MORSE Module Configuration
+
+```go
+type MORSE struct {
+    Frequency float64 `json:"frequency"` // Hz, required, carrier frequency
+    Rate      int     `json:"rate"`      // Required, rate in dits per minute
+    Message   string  `json:"message"`   // Required, message text to transmit
+}
+```
+
+**Validation Rules:**
+- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Rate`: Required, positive integer, dits per minute
+- `Message`: Required, cannot be empty or whitespace only
+
+**Example Usage:**
+```go
+import (
+    "context"
+    "encoding/json"
+    "time"
+    "github.com/psyb0t/gorpitx"
+)
+
+args := gorpitx.MORSE{
+    Frequency: 14070000.0, // 14.070 MHz in Hz (popular CW frequency)
+    Rate:      20,         // 20 dits per minute (standard speed)
+    Message:   "CQ CQ DE N0CALL",
+}
+
+argsJSON, _ := json.Marshal(args)
+ctx := context.Background()
+
+// Execute morse transmission
+err := rpitx.Exec(ctx, gorpitx.ModuleNameMORSE, argsJSON, 0) // No timeout
+if err != nil {
+    panic(err)
+}
+```
+
 ## 🎛️ Process Control
 
 ### Stream Output
+
+**Option 1: Async Streaming (Recommended)**
 ```go
 stdout := make(chan string, 100)
 stderr := make(chan string, 100)
 
-// Start streaming (only works during execution)
-rpitx.StreamOutputs(stdout, stderr)
+// Start async streaming (can be called before execution)
+rpitx.StreamOutputsAsync(stdout, stderr)
+
+// Start output collection
+go func() {
+    for line := range stdout {
+        fmt.Println("STDOUT:", line)
+    }
+}()
+
+// Execute - streaming will automatically start when execution begins
+err := rpitx.Exec(ctx, gorpitx.ModuleNameMORSE, argsJSON, 30*time.Second)
+```
+
+**Option 2: Manual Streaming (Requires precise timing)**
+```go
+stdout := make(chan string, 100)
+stderr := make(chan string, 100)
+
+// Start execution in goroutine
+go func() {
+    err := rpitx.Exec(ctx, gorpitx.ModuleNameMORSE, argsJSON, 30*time.Second)
+    // Handle error
+}()
+
+// Wait for execution to start, then stream
+time.Sleep(100 * time.Millisecond)
+rpitx.StreamOutputs(stdout, stderr)  // Only works during execution
 
 go func() {
     for line := range stdout {
@@ -167,6 +281,8 @@ Executes actual rpitx binaries with proper RF transmission.
 - `ErrPSTooLong`, `ErrPSEmpty`
 - `ErrRTTooLong`
 - `ErrControlPipeEmpty`, `ErrControlPipeNotFound`
+- `ErrTuneFreqRequired`, `ErrTunePPMInvalid`
+- `ErrRateInvalid`, `ErrMessageRequired`
 
 ## 🔗 Architecture
 
@@ -183,28 +299,20 @@ New modules implement this interface with:
 3. Command-line argument building
 
 ### Frequency Utilities
+- `hzToMHz(hz float64) float64` - Convert Hz to MHz
+- `mHzToHz(mHz float64) float64` - Convert MHz to Hz
 - `kHzToMHz(kHz float64) float64` - Convert kHz to MHz
 - `mHzToKHz(mHz float64) float64` - Convert MHz to kHz  
-- `isValidFreqMHz(freqMHz float64) bool` - Validate MHz frequency
+- `isValidFreqHz(freqHz float64) bool` - Validate Hz frequency (standardized)
+- `getMinFreqMHzDisplay() float64` - Get min frequency for error displays (0.005 MHz)
+- `getMaxFreqMHzDisplay() float64` - Get max frequency for error displays (1500 MHz)
 - `hasValidFreqPrecision(freqMHz float64) bool` - Check 0.1MHz precision
 
 **Note**: pifmrds uses MHz, other planned modules use Hz.
 
 ## 📋 TODO: Remaining Modules Implementation (The Fun Stuff)
 
-Based on the easytest modules from rpitx, here are the **10 badass modules** we need to implement (excluding that legacy rpitx garbage):
-
-- **TUNE** - Simple Carrier Generation
-  - **Command**: `tune [-f Frequency] [-e] [-p ppm]`
-  - **Go struct**:
-    ```go
-    type TUNE struct {
-        Frequency *float64 `json:"frequency,omitempty"` // Hz, required, 50kHz-1500MHz
-        ExitImmediate *bool `json:"exitImmediate,omitempty"` // Optional, don't kill carrier
-        PPM *float64 `json:"ppm,omitempty"` // Optional, clock correction > 0
-    }
-    ```
-  - **Validation**: Frequency > 0, PPM > 0 if provided
+Based on the easytest modules from rpitx, here are the **8 badass modules** we still need to implement (excluding that legacy rpitx garbage):
 
 - **PICHIRP** - Frequency Sweep Generator
   - **Command**: `pichirp Frequency(Hz) Bandwidth(Hz) Time(Seconds)`
@@ -230,17 +338,6 @@ Based on the easytest modules from rpitx, here are the **10 badass modules** we 
     ```
   - **Validation**: File exists, frequency > 0, excursion > 0 if provided
 
-- **MORSE** - Morse Code Transmission
-  - **Command**: `morse frequency(Hz) rate(dits) "message"`
-  - **Go struct**:
-    ```go
-    type MORSE struct {
-        Frequency float64 `json:"frequency"` // Hz, required, carrier frequency
-        Rate int `json:"rate"` // Required, rate in dits per minute
-        Message string `json:"message"` // Required, message text to transmit
-    }
-    ```
-  - **Validation**: All required, frequency > 0, rate > 0, message not empty
 
 - **SENDIQ** - IQ Data Transmission
   - **Command**: `sendiq [-i File] [-s Samplerate] [-f Frequency] [-l] [-h Harmonic] [-m Token] [-d] [-p Power] [-t IQType]`

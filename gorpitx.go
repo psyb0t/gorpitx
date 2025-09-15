@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	minFreqKHz              = 5
-	maxFreqKHz              = 1500000
-	gracefulStopTimeoutSecs = 3
+	minFreqKHz            = 5
+	maxFreqKHz            = 1500000
+	gracefulStopTimeout   = 3 * time.Second
+	streamingPollInterval = 10 * time.Millisecond
 )
 
 type Module interface {
@@ -55,7 +56,10 @@ func newRPITX() *RPITX {
 		config:    config,
 		commander: commander.New(),
 		modules: map[ModuleName]Module{
-			ModuleNamePIFMRDS: &PIFMRDS{},
+			ModuleNamePIFMRDS:       &PIFMRDS{},
+			ModuleNameTUNE:          &TUNE{},
+			ModuleNameMORSE:         &MORSE{},
+			ModuleNameSPECTRUMPAINT: &SPECTRUMPAINT{},
 		},
 	}
 }
@@ -71,6 +75,21 @@ func GetInstance() *RPITX {
 	})
 
 	return instance
+}
+
+func (r *RPITX) GetSupportedModules() []ModuleName {
+	modules := make([]ModuleName, 0, len(r.modules))
+	for name := range r.modules {
+		modules = append(modules, name)
+	}
+
+	return modules
+}
+
+func (r *RPITX) IsSupportedModule(name ModuleName) bool {
+	_, exists := r.modules[name]
+
+	return exists
 }
 
 func (r *RPITX) Exec(
@@ -125,11 +144,15 @@ func (r *RPITX) cleanupExecution(ctx context.Context) {
 	r.isExecuting.Store(false)
 }
 
-func (r *RPITX) prepareCommand(name ModuleName, args []byte) (string, []string, error) {
-	module, ok := r.modules[name]
-	if !ok {
+func (r *RPITX) prepareCommand(
+	name ModuleName,
+	args []byte,
+) (string, []string, error) {
+	if !r.IsSupportedModule(name) {
 		return "", nil, ctxerrors.Wrap(ErrUnknownModule, name)
 	}
+
+	module := r.modules[name]
 
 	parsedArgs, err := module.ParseArgs(args)
 	if err != nil {
@@ -148,15 +171,22 @@ func (r *RPITX) prepareCommand(name ModuleName, args []byte) (string, []string, 
 	}
 
 	binaryPath := filepath.Join(r.config.Path, name)
-	cmdName = binaryPath
-	cmdArgs = parsedArgs
+
+	// Wrap with stdbuf for line buffering
+	cmdName = "stdbuf"
+
+	cmdArgs = append([]string{"-oL", binaryPath}, parsedArgs...)
 
 	logrus.Debugf("production command prepared: %s %v", cmdName, cmdArgs)
 
 	return cmdName, cmdArgs, nil
 }
 
-func (r *RPITX) startProcess(ctx context.Context, cmdName string, cmdArgs []string) error {
+func (r *RPITX) startProcess(
+	ctx context.Context,
+	cmdName string,
+	cmdArgs []string,
+) error {
 	r.processMu.Lock()
 	process, err := r.commander.Start(
 		ctx,
@@ -193,10 +223,41 @@ func (r *RPITX) StreamOutputs(stdout, stderr chan<- string) {
 	logrus.Warn("no process to stream")
 }
 
-func (r *RPITX) Stop(
-	ctx context.Context,
-	timeout time.Duration,
-) error {
+// StreamOutputsAsync starts streaming outputs for the currently executing process.
+// This is a convenience method that can be called before or during execution.
+// It will wait for execution to start and then begin streaming.
+func (r *RPITX) StreamOutputsAsync(stdout, stderr chan<- string) {
+	go func() {
+		// Wait for execution to start
+		for !r.isExecuting.Load() {
+			time.Sleep(streamingPollInterval)
+		}
+
+		// Wait a bit more for the process to be created
+		for {
+			r.processMu.RLock()
+			process := r.process
+			r.processMu.RUnlock()
+
+			if process != nil {
+				process.Stream(stdout, stderr)
+
+				break
+			}
+
+			if !r.isExecuting.Load() {
+				// Execution finished before we could get the process
+				logrus.Warn("execution finished before streaming could start")
+
+				break
+			}
+
+			time.Sleep(streamingPollInterval)
+		}
+	}()
+}
+
+func (r *RPITX) Stop(ctx context.Context) error {
 	if !r.isExecuting.Load() {
 		return ErrNotExecuting
 	}
@@ -206,7 +267,7 @@ func (r *RPITX) Stop(
 	r.processMu.RUnlock()
 
 	if process != nil {
-		if err := process.Stop(ctx, timeout); err != nil {
+		if err := process.Stop(ctx); err != nil {
 			return ctxerrors.Wrap(err, "failed to stop process")
 		}
 	}
@@ -215,18 +276,20 @@ func (r *RPITX) Stop(
 }
 
 // waitWithTimeout waits for process completion with manual timeout handling.
-func (r *RPITX) waitWithTimeout(ctx context.Context, timeout time.Duration) error {
-	done := make(chan error, 1)
+func (r *RPITX) waitWithTimeout(
+	ctx context.Context,
+	timeout time.Duration,
+) error {
+	errCh := make(chan error, 1)
 
 	// Start waiting for process in goroutine
 	go func() {
-		err := r.process.Wait()
-		done <- err
+		errCh <- r.process.Wait()
 	}()
 
 	// Wait for either completion or timeout
 	select {
-	case err := <-done:
+	case err := <-errCh:
 		// Process completed normally
 		if err != nil {
 			return ctxerrors.Wrap(err, "failed to wait for process")
@@ -238,16 +301,21 @@ func (r *RPITX) waitWithTimeout(ctx context.Context, timeout time.Duration) erro
 		// Timeout occurred - use graceful stop with timeout
 		logrus.Debug("timeout reached, performing graceful stop")
 
-		stopCtx, cancel := context.WithTimeout(ctx, gracefulStopTimeoutSecs*time.Second)
+		stopCtx, cancel := context.WithTimeout(
+			ctx,
+			gracefulStopTimeout,
+		)
+
 		defer cancel()
 
-		if err := r.Stop(stopCtx, gracefulStopTimeoutSecs*time.Second); err != nil {
-			logrus.WithError(err).Warn("failed to gracefully stop process after timeout")
+		err := r.Stop(stopCtx)
+		if err != nil {
+			logrus.WithError(err).
+				Warn("failed to gracefully stop process after timeout")
 		}
 
 		// Wait for the stop to complete
-		err := <-done
-		if err != nil {
+		if err = <-errCh; err != nil {
 			// Check if this was our expected timeout termination
 			if errors.Is(err, commonerrors.ErrTerminated) ||
 				errors.Is(err, commonerrors.ErrKilled) {

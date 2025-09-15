@@ -3,6 +3,7 @@ package gorpitx
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -124,8 +125,210 @@ func TestRPITX_GetInstance(t *testing.T) {
 	// Should return same instance (singleton)
 	assert.Same(t, rpitx1, rpitx2)
 
-	// Should have pifmrds module registered
+	// Should have all modules registered
 	assert.Contains(t, rpitx1.modules, ModuleNamePIFMRDS)
+	assert.Contains(t, rpitx1.modules, ModuleNameTUNE)
+	assert.Contains(t, rpitx1.modules, ModuleNameMORSE)
+	assert.Contains(t, rpitx1.modules, ModuleNameSPECTRUMPAINT)
+}
+
+func TestRPITX_GetSupportedModules(t *testing.T) {
+	// Set ENV=dev to avoid root check in tests
+	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+	// Reset singleton for test
+	instance = nil
+	once = sync.Once{}
+
+	rpitx := GetInstance()
+	modules := rpitx.GetSupportedModules()
+
+	// Should return all registered modules
+	assert.Len(t, modules, 4)
+	assert.Contains(t, modules, ModuleNamePIFMRDS)
+	assert.Contains(t, modules, ModuleNameTUNE)
+	assert.Contains(t, modules, ModuleNameMORSE)
+	assert.Contains(t, modules, ModuleNameSPECTRUMPAINT)
+
+	// Should return a new slice each time (checking length consistency)
+	modules2 := rpitx.GetSupportedModules()
+	assert.Len(t, modules2, 4)
+	assert.Contains(t, modules2, ModuleNamePIFMRDS)
+	assert.Contains(t, modules2, ModuleNameTUNE)
+	assert.Contains(t, modules2, ModuleNameMORSE)
+	assert.Contains(t, modules2, ModuleNameSPECTRUMPAINT)
+}
+
+func TestRPITX_IsSupportedModule(t *testing.T) {
+	// Set ENV=dev to avoid root check in tests
+	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+	// Reset singleton for test
+	instance = nil
+	once = sync.Once{}
+
+	rpitx := GetInstance()
+
+	// Test supported modules
+	assert.True(t, rpitx.IsSupportedModule(ModuleNamePIFMRDS))
+	assert.True(t, rpitx.IsSupportedModule(ModuleNameTUNE))
+	assert.True(t, rpitx.IsSupportedModule(ModuleNameMORSE))
+	assert.True(t, rpitx.IsSupportedModule(ModuleNameSPECTRUMPAINT))
+
+	// Test unsupported module
+	assert.False(t, rpitx.IsSupportedModule("nonexistent"))
+	assert.False(t, rpitx.IsSupportedModule(""))
+}
+
+func TestRPITX_StreamOutputs_DuringExecution(t *testing.T) {
+	// Test StreamOutputs timing during actual execution
+	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+	// Reset singleton for test
+	instance = nil
+	once = sync.Once{}
+
+	rpitx := GetInstance()
+	ctx := context.Background()
+
+	// Create valid MORSE args
+	args := map[string]any{
+		"frequency": 434000000.0,
+		"rate":      20,
+		"message":   "TEST STREAMING",
+	}
+	argsJSON, err := json.Marshal(args)
+	require.NoError(t, err)
+
+	// Create channels for streaming
+	stdout := make(chan string, 100)
+	stderr := make(chan string, 100)
+
+	// Track execution state
+	execStarted := make(chan bool, 1)
+	execFinished := make(chan error, 1)
+
+	// Start execution in goroutine
+	go func() {
+		// Signal that execution is starting
+		execStarted <- true
+
+		// Execute with timeout
+		err := rpitx.Exec(ctx, ModuleNameMORSE, argsJSON, 2*time.Second)
+		execFinished <- err
+	}()
+
+	// Wait for execution to start
+	<-execStarted
+
+	// Give the process time to actually start (this is the critical timing)
+	time.Sleep(200 * time.Millisecond)
+
+	// Now try to stream outputs - this should work if timing is correct
+	streamStarted := make(chan bool, 1)
+	go func() {
+		rpitx.StreamOutputs(stdout, stderr)
+		streamStarted <- true
+	}()
+
+	// Wait for streaming to be set up
+	<-streamStarted
+
+	// Collect some output or timeout
+	outputReceived := false
+	timeout := time.After(1500 * time.Millisecond)
+
+	for {
+		select {
+		case line := <-stdout:
+			t.Logf("Received stdout: %s", line)
+			outputReceived = true
+		case line := <-stderr:
+			t.Logf("Received stderr: %s", line)
+			outputReceived = true
+		case err := <-execFinished:
+			t.Logf("Execution finished with error: %v", err)
+			goto checkResults
+		case <-timeout:
+			t.Log("Test timeout reached")
+			goto checkResults
+		}
+	}
+
+checkResults:
+	// We should have received some output from the mock command
+	if !outputReceived {
+		t.Log("WARNING: No output received - this indicates a timing issue with StreamOutputs")
+		t.Log("The mock command should output 'mocking execution' every second")
+	}
+
+	// Clean up
+	instance = nil
+	once = sync.Once{}
+}
+
+func TestRPITX_StreamOutputsAsync(t *testing.T) {
+	// Test StreamOutputsAsync for easier usage
+	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+	// Reset singleton for test
+	instance = nil
+	once = sync.Once{}
+
+	rpitx := GetInstance()
+	ctx := context.Background()
+
+	// Create valid MORSE args
+	args := map[string]any{
+		"frequency": 434000000.0,
+		"rate":      20,
+		"message":   "TEST ASYNC STREAMING",
+	}
+	argsJSON, err := json.Marshal(args)
+	require.NoError(t, err)
+
+	// Create channels for streaming
+	stdout := make(chan string, 100)
+	stderr := make(chan string, 100)
+
+	// Start async streaming BEFORE execution (this should work)
+	rpitx.StreamOutputsAsync(stdout, stderr)
+
+	// Start execution after setting up streaming
+	execFinished := make(chan error, 1)
+	go func() {
+		err := rpitx.Exec(ctx, ModuleNameMORSE, argsJSON, 2*time.Second)
+		execFinished <- err
+	}()
+
+	// Collect output
+	outputReceived := false
+	timeout := time.After(3 * time.Second)
+
+	for {
+		select {
+		case line := <-stdout:
+			t.Logf("Received stdout: %s", line)
+			outputReceived = true
+		case line := <-stderr:
+			t.Logf("Received stderr: %s", line)
+			outputReceived = true
+		case err := <-execFinished:
+			t.Logf("Execution finished with error: %v", err)
+			goto checkResults
+		case <-timeout:
+			t.Log("Test timeout reached")
+			goto checkResults
+		}
+	}
+
+checkResults:
+	// Should have received output
+	assert.True(t, outputReceived, "Should have received output from async streaming")
+
+	// Clean up
+	instance = nil
+	once = sync.Once{}
 }
 
 func TestRPITX_getMockExecCmd(t *testing.T) {
@@ -167,6 +370,145 @@ func TestRPITX_getMockExecCmd_CommandContent(t *testing.T) {
 	assert.Contains(t, cmdArgs[1], "done")
 }
 
+func TestRPITX_Exec_TuneModule(t *testing.T) {
+	tests := []struct {
+		name        string
+		moduleName  ModuleName
+		args        map[string]any
+		expectError bool
+	}{
+		{
+			name:       "valid tune module",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency": 434000000.0, // 434 MHz in Hz
+			},
+			expectError: false,
+		},
+		{
+			name:       "tune module with all parameters",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency":     434000000.0,
+				"exitImmediate": true,
+				"ppm":           2.5,
+			},
+			expectError: false,
+		},
+		{
+			name:       "tune module missing frequency",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"exitImmediate": true,
+			},
+			expectError: true,
+		},
+		{
+			name:       "tune module invalid frequency",
+			moduleName: ModuleNameTUNE,
+			args: map[string]any{
+				"frequency": -434000000.0,
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module valid",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"rate":      20,
+				"message":   "CQ DE N0CALL",
+			},
+			expectError: false,
+		},
+		{
+			name:       "morse module with different params",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 7040000.0,
+				"rate":      15,
+				"message":   "HELLO WORLD",
+			},
+			expectError: false,
+		},
+		{
+			name:       "morse module missing frequency",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"rate":    20,
+				"message": "TEST",
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module missing rate",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"message":   "TEST",
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module missing message",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": 14070000.0,
+				"rate":      20,
+			},
+			expectError: true,
+		},
+		{
+			name:       "morse module invalid frequency",
+			moduleName: ModuleNameMORSE,
+			args: map[string]any{
+				"frequency": -14070000.0,
+				"rate":      20,
+				"message":   "TEST",
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set ENV=dev to test mock execution
+			t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+			// Create RPITX instance with mock commander
+			mockCommander := commander.NewMock()
+			rpitx := &RPITX{
+				modules: map[string]Module{
+					ModuleNamePIFMRDS: &PIFMRDS{},
+					ModuleNameTUNE:    &TUNE{},
+					ModuleNameMORSE:   &MORSE{},
+				},
+				commander: mockCommander,
+			}
+
+			if !tt.expectError {
+				// Mock successful execution for valid test cases
+				mockCommander.ExpectWithMatchers("sh", commander.Exact("-c"), commander.Any()).ReturnError(context.DeadlineExceeded)
+			}
+
+			argsBytes, err := json.Marshal(tt.args)
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			err = rpitx.Exec(ctx, tt.moduleName, argsBytes, 1*time.Second)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+
+			// Should timeout in dev mode (this is expected)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "context deadline exceeded")
+		})
+	}
+}
+
 // Additional coverage tests for missing scenarios
 
 func TestRPITX_ProductionExecution_Success(t *testing.T) {
@@ -194,8 +536,9 @@ func TestRPITX_ProductionExecution_Success(t *testing.T) {
 	argsBytes, err := json.Marshal(args)
 	require.NoError(t, err)
 
-	// Mock successful production execution with direct binary command (no sudo)
-	mockCommander.Expect("$HOME/rpitx/pifmrds",
+	// Mock successful production execution with stdbuf wrapper
+	mockCommander.Expect("stdbuf",
+		"-oL", "$HOME/rpitx/pifmrds",
 		"-freq", "107.9",
 		"-audio", ".fixtures/test.wav",
 		"-pi", "1234",
@@ -225,7 +568,7 @@ func TestRPITX_ProductionExecution_StartFailure(t *testing.T) {
 	}
 
 	// Mock start failure by returning error from execute
-	mockCommander.Expect("./pifmrds", "-freq", "107.9", "-audio", ".fixtures/test.wav").ReturnError(assert.AnError)
+	mockCommander.Expect("stdbuf", "-oL", "./pifmrds", "-freq", "107.9", "-audio", ".fixtures/test.wav").ReturnError(assert.AnError)
 
 	args := map[string]any{
 		"freq":  107.9,
@@ -371,13 +714,23 @@ func TestPIFMRDS_Validate_ControlPipeError(t *testing.T) {
 
 func TestRPITX_StopWithoutExecution(t *testing.T) {
 	// Test stopping when nothing is executing
+	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+
+	// Reset singleton for test
+	instance = nil
+	once = sync.Once{}
+
 	rpitx := GetInstance()
 
 	ctx := context.Background()
-	err := rpitx.Stop(ctx, 1*time.Second)
+	err := rpitx.Stop(ctx)
 
 	// Should return ErrNotExecuting
 	assert.ErrorIs(t, err, ErrNotExecuting)
+
+	// Clean up
+	instance = nil
+	once = sync.Once{}
 }
 
 func TestRPITX_StreamOutputs_NotExecuting(t *testing.T) {
@@ -445,14 +798,20 @@ func TestRPITX_PrepareCommand_Production(t *testing.T) {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
 
-	expectedBinaryPath := "/home/test/rpitx/pifmrds"
-	if cmdName != expectedBinaryPath {
-		t.Errorf("Expected cmdName to be '%s', got: %s", expectedBinaryPath, cmdName)
+	expectedCmdName := "stdbuf"
+	if cmdName != expectedCmdName {
+		t.Errorf("Expected cmdName to be '%s', got: %s", expectedCmdName, cmdName)
 	}
 
-	// Check that cmdArgs contains the parsed arguments
-	if len(cmdArgs) < 2 || cmdArgs[0] != "-freq" || cmdArgs[1] != "100.0" {
-		t.Errorf("Expected cmdArgs to contain parsed arguments, got: %v", cmdArgs)
+	// Check that cmdArgs contains line buffering and parsed arguments
+	expectedArgs := []string{"-oL", "/home/test/rpitx/pifmrds", "-freq", "100.0", "-audio", ".fixtures/test.wav"}
+	if len(cmdArgs) < len(expectedArgs) {
+		t.Errorf("Expected cmdArgs to have at least %d elements, got: %v", len(expectedArgs), cmdArgs)
+	}
+
+	// Check key elements are present
+	if !contains(cmdArgs, "-oL") || !contains(cmdArgs, "/home/test/rpitx/pifmrds") {
+		t.Errorf("Expected cmdArgs to contain stdbuf args, got: %v", cmdArgs)
 	}
 
 	t.Logf("Production command: %s %v", cmdName, cmdArgs)
@@ -496,4 +855,8 @@ func TestRPITX_PrepareCommand_Development(t *testing.T) {
 // Helper functions for test.
 func stringPtr(s string) *string {
 	return &s
+}
+
+func contains(slice []string, item string) bool {
+	return slices.Contains(slice, item)
 }

@@ -47,3 +47,22 @@ var (
 	ErrControlPipeEmpty    = errors.New("control pipe path cannot be empty when specified")
 	ErrControlPipeNotFound = errors.New("control pipe does not exist")
 )
+
+// TUNE module validation errors.
+var (
+	ErrTuneFreqRequired = errors.New("tune frequency is required")
+	ErrTunePPMInvalid   = errors.New("tune PPM must be positive")
+)
+
+// MORSE module validation errors.
+var (
+	ErrRateInvalid     = errors.New("morse rate must be positive")
+	ErrMessageRequired = errors.New("morse message is required")
+)
+
+// SPECTRUMPAINT module validation errors.
+var (
+	ErrPictureFileRequired = errors.New("picture file is required")
+	ErrPictureFileNotFound = errors.New("picture file does not exist")
+	ErrExcursionInvalid    = errors.New("excursion must be positive")
+)

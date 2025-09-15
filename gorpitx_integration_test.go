@@ -52,7 +52,7 @@ func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
 	assert.True(t, rpitx.isExecuting.Load(), "RPITX should be executing")
 
 	// Stop execution
-	stopErr := rpitx.Stop(ctx, 5*time.Second)
+	stopErr := rpitx.Stop(ctx)
 	// Stop should succeed or return expected termination errors
 	if stopErr != nil && !errors.Is(stopErr, commonerrors.ErrTerminated) && !errors.Is(stopErr, commonerrors.ErrKilled) {
 		t.Errorf("unexpected stop error: %v", stopErr)
@@ -121,7 +121,7 @@ func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		// If still running, stop it
-		_ = rpitx.Stop(ctx, 1*time.Second) // Best effort stop
+		_ = rpitx.Stop(ctx) // Best effort stop
 
 		<-errCh // Wait for completion
 	}
@@ -164,7 +164,7 @@ func TestRPITX_Stop_Integration(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Stop execution
-	stopErr := rpitx.Stop(ctx, 5*time.Second)
+	stopErr := rpitx.Stop(ctx)
 	// Stop should succeed or return expected termination errors
 	if stopErr != nil && !errors.Is(stopErr, commonerrors.ErrTerminated) && !errors.Is(stopErr, commonerrors.ErrKilled) {
 		t.Errorf("unexpected stop error: %v", stopErr)
@@ -376,21 +376,28 @@ func createTestArgsBytes(t *testing.T) []byte {
 	return argsBytes
 }
 
-func performConcurrentStops(ctx context.Context, t *testing.T, rpitx *RPITX) []error {
+func performConcurrentStops(
+	ctx context.Context,
+	t *testing.T,
+	rpitx *RPITX,
+) []error {
 	t.Helper()
 
 	stopErrCh1 := make(chan error, 1)
 	stopErrCh2 := make(chan error, 1)
 	stopErrCh3 := make(chan error, 1)
 
-	go func() { stopErrCh1 <- rpitx.Stop(ctx, 5*time.Second) }()
-	go func() { stopErrCh2 <- rpitx.Stop(ctx, 5*time.Second) }()
-	go func() { stopErrCh3 <- rpitx.Stop(ctx, 5*time.Second) }()
+	go func() { stopErrCh1 <- rpitx.Stop(ctx) }()
+	go func() { stopErrCh2 <- rpitx.Stop(ctx) }()
+	go func() { stopErrCh3 <- rpitx.Stop(ctx) }()
 
 	return []error{<-stopErrCh1, <-stopErrCh2, <-stopErrCh3}
 }
 
-func analyzeStopResults(t *testing.T, stopErrors []error) (int, int) {
+func analyzeStopResults(
+	t *testing.T,
+	stopErrors []error,
+) (int, int) {
 	t.Helper()
 
 	successCount := 0
@@ -455,7 +462,10 @@ func setupRealExecutionTest() *RPITX {
 	return rpitx
 }
 
-func startExecutionForStreaming(ctx context.Context, rpitx *RPITX) (chan struct{}, *error) {
+func startExecutionForStreaming(
+	ctx context.Context,
+	rpitx *RPITX,
+) (chan struct{}, *error) {
 	var execErr error
 
 	execDone := make(chan struct{})
@@ -487,7 +497,11 @@ func setupOutputCollection() (*[]string, *sync.Mutex) {
 	return &receivedLines, &streamMu
 }
 
-func startOutputCollection(stdout, stderr chan string, receivedLines *[]string, streamMu *sync.Mutex) chan struct{} {
+func startOutputCollection(
+	stdout, stderr chan string,
+	receivedLines *[]string,
+	streamMu *sync.Mutex,
+) chan struct{} {
 	collectDone := make(chan struct{})
 
 	go func() {
@@ -499,7 +513,11 @@ func startOutputCollection(stdout, stderr chan string, receivedLines *[]string, 
 	return collectDone
 }
 
-func collectStreamOutput(stdout, stderr chan string, receivedLines *[]string, streamMu *sync.Mutex) {
+func collectStreamOutput(
+	stdout, stderr chan string,
+	receivedLines *[]string,
+	streamMu *sync.Mutex,
+) {
 	for {
 		select {
 		case line, ok := <-stdout:
@@ -520,7 +538,11 @@ func collectStreamOutput(stdout, stderr chan string, receivedLines *[]string, st
 	}
 }
 
-func drainStderr(stderr chan string, receivedLines *[]string, streamMu *sync.Mutex) {
+func drainStderr(
+	stderr chan string,
+	receivedLines *[]string,
+	streamMu *sync.Mutex,
+) {
 	for {
 		select {
 		case line, ok := <-stderr:
@@ -535,7 +557,11 @@ func drainStderr(stderr chan string, receivedLines *[]string, streamMu *sync.Mut
 	}
 }
 
-func appendLine(receivedLines *[]string, streamMu *sync.Mutex, line string) {
+func appendLine(
+	receivedLines *[]string,
+	streamMu *sync.Mutex,
+	line string,
+) {
 	streamMu.Lock()
 
 	*receivedLines = append(*receivedLines, line)
@@ -555,7 +581,7 @@ func runStreamingTest(
 	time.Sleep(2500 * time.Millisecond)
 
 	// Stop execution
-	_ = rpitx.Stop(ctx, 3*time.Second)
+	_ = rpitx.Stop(ctx)
 
 	// Wait for execution and collection to complete
 	waitForCompletion(execDone, collectDone)
@@ -575,7 +601,13 @@ func waitForCompletion(execDone, collectDone chan struct{}) {
 	}
 }
 
-func verifyStreamingResults(t *testing.T, execErr *error, rpitx *RPITX, receivedLines *[]string, streamMu *sync.Mutex) {
+func verifyStreamingResults(
+	t *testing.T,
+	execErr *error,
+	rpitx *RPITX,
+	receivedLines *[]string,
+	streamMu *sync.Mutex,
+) {
 	t.Helper()
 	// Verify execution completed (termination signals are expected)
 	if *execErr != nil &&
