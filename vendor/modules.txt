@@ -703,7 +703,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/psyb0t/commander v0.3.0
+# github.com/psyb0t/commander v0.4.0
 ## explicit; go 1.24.6
 github.com/psyb0t/commander
 # github.com/psyb0t/common-go v0.0.0-20250914061813-a517b076b64a

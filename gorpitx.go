@@ -301,7 +301,11 @@ func (r *RPITX) waitWithTimeout(
 		// Timeout occurred - use graceful stop with timeout
 		logrus.Debug("timeout reached, performing graceful stop")
 
-		stopCtx, cancel := context.WithTimeout(ctx, gracefulStopTimeout)
+		stopCtx, cancel := context.WithTimeout(
+			ctx,
+			gracefulStopTimeout,
+		)
+
 		defer cancel()
 
 		err := r.Stop(stopCtx)
