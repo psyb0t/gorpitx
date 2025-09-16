@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -199,19 +200,19 @@ func TestTUNE_ValidateFreq(t *testing.T) {
 			name:        "nil frequency",
 			frequency:   nil,
 			expectError: true,
-			errorType:   ErrTuneFreqRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 		{
 			name:        "zero frequency",
 			frequency:   floatPtr(0.0),
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative frequency",
 			frequency:   floatPtr(-100000.0),
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "frequency too low",
@@ -275,13 +276,13 @@ func TestTUNE_ValidatePPM(t *testing.T) {
 			name:        "zero ppm",
 			ppm:         floatPtr(0.0),
 			expectError: true,
-			errorType:   ErrTunePPMInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative ppm",
 			ppm:         floatPtr(-1.0),
 			expectError: true,
-			errorType:   ErrTunePPMInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "valid positive ppm",

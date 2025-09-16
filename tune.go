@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/psyb0t/ctxerrors"
 )
 
@@ -76,13 +77,13 @@ func (m *TUNE) validate() error {
 func (m *TUNE) validateFreq() error {
 	// Frequency is required
 	if m.Frequency == nil {
-		return ErrTuneFreqRequired
+		return ctxerrors.Wrap(commonerrors.ErrRequiredFieldNotSet, "frequency")
 	}
 
 	if *m.Frequency <= 0 {
 		return ctxerrors.Wrapf(
-			ErrFreqNegative,
-			"got: %f",
+			commonerrors.ErrInvalidValue,
+			"frequency must be positive, got: %f",
 			*m.Frequency,
 		)
 	}
@@ -104,8 +105,8 @@ func (m *TUNE) validatePPM() error {
 	// PPM is optional, but if provided must be positive
 	if m.PPM != nil && *m.PPM <= 0 {
 		return ctxerrors.Wrapf(
-			ErrTunePPMInvalid,
-			"got: %f",
+			commonerrors.ErrInvalidValue,
+			"PPM must be positive, got: %f",
 			*m.PPM,
 		)
 	}

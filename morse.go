@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/psyb0t/ctxerrors"
 )
 
@@ -76,8 +77,8 @@ func (m *MORSE) validate() error {
 func (m *MORSE) validateFrequency() error {
 	if m.Frequency <= 0 {
 		return ctxerrors.Wrapf(
-			ErrFreqNegative,
-			"got: %f",
+			commonerrors.ErrInvalidValue,
+			"frequency must be positive, got: %f",
 			m.Frequency,
 		)
 	}
@@ -98,8 +99,8 @@ func (m *MORSE) validateFrequency() error {
 func (m *MORSE) validateRate() error {
 	if m.Rate <= 0 {
 		return ctxerrors.Wrapf(
-			ErrRateInvalid,
-			"got: %d",
+			commonerrors.ErrInvalidValue,
+			"morse rate must be positive, got: %d",
 			m.Rate,
 		)
 	}
@@ -110,7 +111,7 @@ func (m *MORSE) validateRate() error {
 // validateMessage validates the message parameter.
 func (m *MORSE) validateMessage() error {
 	if strings.TrimSpace(m.Message) == "" {
-		return ErrMessageRequired
+		return ctxerrors.Wrap(commonerrors.ErrRequiredFieldNotSet, "message")
 	}
 
 	return nil

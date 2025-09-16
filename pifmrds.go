@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/psyb0t/ctxerrors"
 )
 
@@ -141,11 +142,11 @@ func (m *PIFMRDS) validate() error {
 func (m *PIFMRDS) validateFreq() error {
 	// Validate required frequency
 	if m.Freq == 0 {
-		return ErrFreqNotSet
+		return ctxerrors.Wrap(commonerrors.ErrRequiredFieldNotSet, "freq")
 	}
 
 	if m.Freq < 0 {
-		return ctxerrors.Wrapf(ErrFreqNegative, "got: %f", m.Freq)
+		return ctxerrors.Wrapf(commonerrors.ErrInvalidValue, "frequency must be positive, got: %f", m.Freq)
 	}
 
 	// RPiTX frequency range validation using utility functions
@@ -175,13 +176,13 @@ func (m *PIFMRDS) validateFreq() error {
 func (m *PIFMRDS) validateAudio() error {
 	// Audio file is required
 	if m.Audio == "" {
-		return ErrAudioRequired
+		return ctxerrors.Wrap(commonerrors.ErrRequiredFieldNotSet, "audio")
 	}
 
 	// Check if audio file exists (no stdin support for now)
 	if _, err := os.Stat(m.Audio); os.IsNotExist(err) {
 		return ctxerrors.Wrapf(
-			ErrAudioNotFound,
+			commonerrors.ErrFileNotFound,
 			"file: %s",
 			m.Audio,
 		)
@@ -197,7 +198,7 @@ func (m *PIFMRDS) validatePI() error {
 		pi := strings.TrimSpace(m.PI)
 		if len(pi) != piCodeLength {
 			return ctxerrors.Wrapf(
-				ErrPIInvalidLength, "got: %s", pi)
+				commonerrors.ErrInvalidValue, "PI code must be exactly 4 characters, got: %s", pi)
 		}
 
 		if _, err := strconv.ParseUint(pi, 16, 16); err != nil {
@@ -219,7 +220,7 @@ func (m *PIFMRDS) validatePS() error {
 		}
 
 		if strings.TrimSpace(m.PS) == "" {
-			return ErrPSEmpty
+			return ctxerrors.Wrap(commonerrors.ErrInvalidValue, "PS text cannot be empty when specified")
 		}
 	}
 
@@ -232,7 +233,7 @@ func (m *PIFMRDS) validateRT() error {
 	if m.RT != "" {
 		if len(m.RT) > rtMaxLength {
 			return ctxerrors.Wrapf(
-				ErrRTTooLong, "got: %d chars", len(m.RT))
+				commonerrors.ErrInvalidValue, "RT text must be 64 characters or less, got: %d chars", len(m.RT))
 		}
 	}
 
@@ -252,13 +253,13 @@ func (m *PIFMRDS) validateControlPipe() error {
 	if m.ControlPipe != nil {
 		pipe := strings.TrimSpace(*m.ControlPipe)
 		if pipe == "" {
-			return ErrControlPipeEmpty
+			return ctxerrors.Wrap(commonerrors.ErrInvalidValue, "control pipe path cannot be empty when specified")
 		}
 		// Check if the control pipe exists (must be created with mkfifo first)
 		if _, err := os.Stat(pipe); os.IsNotExist(err) {
 			return ctxerrors.Wrapf(
-				ErrControlPipeNotFound,
-				"%s (create with: mkfifo %s)",
+				commonerrors.ErrFileNotFound,
+				"control pipe does not exist: %s (create with: mkfifo %s)",
 				pipe, pipe,
 			)
 		}

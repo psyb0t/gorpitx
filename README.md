@@ -9,9 +9,10 @@ Tired of wrestling with raw C binaries like a goddamn caveman? This badass Go in
 Executes rpitx modules through Go without the usual clusterfuck of manual process wrangling. Supports dev mode (fake transmission for testing) and production mode (actual RF carnage).
 
 **Implemented Modules:**
-- **pifmrds**: FM broadcasting with RDS data (frequency in MHz) ✅ Done and dusted
-- **tune**: Simple carrier generation (frequency in Hz) ✅ Fresh off the press
-- **morse**: Morse code transmission (frequency in Hz) ✅ Fresh implementation
+- **pifmrds**: FM broadcasting with RDS data (frequency in MHz)
+- **tune**: Simple carrier generation (frequency in Hz)
+- **morse**: Morse code transmission (frequency in Hz)
+- **spectrumpaint**: Spectrum painting transmission (frequency in Hz)
 
 **Architecture Highlights:**
 - Singleton pattern with `GetInstance()` because global state done right
@@ -189,6 +190,64 @@ if err != nil {
 }
 ```
 
+## 🎨 SPECTRUMPAINT Module Configuration
+
+```go
+type SPECTRUMPAINT struct {
+    PictureFile string   `json:"pictureFile"` // Required, path to raw data file
+    Frequency   float64  `json:"frequency"`   // Hz, required, carrier frequency
+    Excursion   *float64 `json:"excursion,omitempty"` // Hz, optional, frequency excursion
+}
+```
+
+**Validation Rules:**
+- `PictureFile`: Required, file must exist (expects raw YUV data format, 320 pixels wide)
+- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Excursion`: Optional, must be positive if specified
+
+**Image Format Requirements:**
+The spectrumpaint binary expects raw YUV data files with a fixed width of 320 pixels. Convert your images using ImageMagick:
+
+```bash
+# Convert any image to the required 320-pixel wide format (creates multiple files: picture.Y, picture.U, picture.V)
+convert input.jpg -resize 320x -flip -quantize YUV -dither FloydSteinberg -colors 4 -interlace partition picture.yuv
+
+# The spectrumpaint binary uses the luminance channel (picture.Y file)
+# For specific height (e.g., 100 pixels):
+convert input.jpg -resize 320x100! -flip -quantize YUV -dither FloydSteinberg -colors 4 -interlace partition picture.yuv
+```
+
+**Important**: The `-interlace partition` option creates separate Y, U, V files. Use the `.Y` file (luminance channel) with spectrumpaint.
+
+**Note**: The 320-pixel width limit is hardcoded in the rpitx spectrumpaint binary.
+
+**Example Usage:**
+```go
+import (
+    "context"
+    "encoding/json"
+    "time"
+    "github.com/psyb0t/gorpitx"
+)
+
+args := gorpitx.SPECTRUMPAINT{
+    PictureFile: ".fixtures/test_spectrum_320x100.Y", // YUV luminance file
+    Frequency:   434000000.0, // 434 MHz in Hz
+    Excursion:   floatPtr(100000.0), // 100 kHz excursion
+}
+
+argsJSON, _ := json.Marshal(args)
+ctx := context.Background()
+
+// Execute spectrum paint transmission
+err := rpitx.Exec(ctx, gorpitx.ModuleNameSPECTRUMPAINT, argsJSON, 0) // No timeout
+if err != nil {
+    panic(err)
+}
+
+func floatPtr(f float64) *float64 { return &f }
+```
+
 ## 🎛️ Process Control
 
 ### Stream Output
@@ -275,14 +334,14 @@ Executes actual rpitx binaries with proper RF transmission.
 - `ErrNotExecuting`: No active execution for stop/stream
 
 **Validation Errors:**
-- `ErrFreqNotSet`, `ErrFreqNegative`, `ErrFreqOutOfRange`, `ErrFreqPrecision`
-- `ErrAudioRequired`, `ErrAudioNotFound`
-- `ErrPIInvalidLength`, `ErrPIInvalidHex`
-- `ErrPSTooLong`, `ErrPSEmpty`
-- `ErrRTTooLong`
-- `ErrControlPipeEmpty`, `ErrControlPipeNotFound`
-- `ErrTuneFreqRequired`, `ErrTunePPMInvalid`
-- `ErrRateInvalid`, `ErrMessageRequired`
+- `commonerrors.ErrRequiredFieldNotSet` - Missing required fields (wrapped with field name)
+- `commonerrors.ErrInvalidValue` - Invalid parameter values (wrapped with details)
+- `commonerrors.ErrFileNotFound` - Missing files (wrapped with file path)
+- `ErrFreqOutOfRange`, `ErrFreqPrecision` - Frequency validation errors
+- `ErrPIInvalidHex` - PI code validation
+- `ErrPSTooLong` - PS text validation
+
+**Note**: All validation errors use `ctxerrors.Wrap()` pattern for contextual error information.
 
 ## 🔗 Architecture
 
@@ -312,7 +371,7 @@ New modules implement this interface with:
 
 ## 📋 TODO: Remaining Modules Implementation (The Fun Stuff)
 
-Based on the easytest modules from rpitx, here are the **8 badass modules** we still need to implement (excluding that legacy rpitx garbage):
+Based on the easytest modules from rpitx, here are the **7 badass modules** we still need to implement (excluding that legacy rpitx garbage):
 
 - **PICHIRP** - Frequency Sweep Generator
   - **Command**: `pichirp Frequency(Hz) Bandwidth(Hz) Time(Seconds)`
@@ -325,18 +384,6 @@ Based on the easytest modules from rpitx, here are the **8 badass modules** we s
     }
     ```
   - **Validation**: All parameters required and > 0
-
-- **SPECTRUMPAINT** - Spectrum Painting
-  - **Command**: `spectrumpaint picture.rgb frequency(Hz) [Excursion(Hz)]`
-  - **Go struct**:
-    ```go
-    type SPECTRUMPAINT struct {
-        PictureFile string `json:"pictureFile"` // Required, .rgb file path
-        Frequency float64 `json:"frequency"` // Hz, required
-        Excursion *float64 `json:"excursion,omitempty"` // Hz, optional, default 100000
-    }
-    ```
-  - **Validation**: File exists, frequency > 0, excursion > 0 if provided
 
 
 - **SENDIQ** - IQ Data Transmission

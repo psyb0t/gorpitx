@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/psyb0t/ctxerrors"
 )
 
@@ -13,8 +14,8 @@ const (
 )
 
 type SPECTRUMPAINT struct {
-	// PictureFile specifies the path to the RGB picture file. Required parameter.
-	// File must exist and be accessible.
+	// PictureFile specifies the path to the raw data file for spectrumpaint. Required parameter.
+	// File must exist and be accessible. Should be raw data (320 bytes per row).
 	PictureFile string `json:"pictureFile"`
 
 	// Frequency specifies the carrier frequency in Hz. Required parameter.
@@ -78,12 +79,12 @@ func (s *SPECTRUMPAINT) validate() error {
 // validatePictureFile validates the picture file parameter.
 func (s *SPECTRUMPAINT) validatePictureFile() error {
 	if s.PictureFile == "" {
-		return ErrPictureFileRequired
+		return ctxerrors.Wrap(commonerrors.ErrRequiredFieldNotSet, "pictureFile")
 	}
 
 	if _, err := os.Stat(s.PictureFile); os.IsNotExist(err) {
 		return ctxerrors.Wrapf(
-			ErrPictureFileNotFound,
+			commonerrors.ErrFileNotFound,
 			"file: %s",
 			s.PictureFile,
 		)
@@ -96,8 +97,8 @@ func (s *SPECTRUMPAINT) validatePictureFile() error {
 func (s *SPECTRUMPAINT) validateFrequency() error {
 	if s.Frequency <= 0 {
 		return ctxerrors.Wrapf(
-			ErrFreqNegative,
-			"got: %f",
+			commonerrors.ErrInvalidValue,
+			"frequency must be positive, got: %f",
 			s.Frequency,
 		)
 	}
@@ -118,8 +119,8 @@ func (s *SPECTRUMPAINT) validateFrequency() error {
 func (s *SPECTRUMPAINT) validateExcursion() error {
 	if s.Excursion != nil && *s.Excursion <= 0 {
 		return ctxerrors.Wrapf(
-			ErrExcursionInvalid,
-			"got: %f",
+			commonerrors.ErrInvalidValue,
+			"excursion must be positive, got: %f",
 			*s.Excursion,
 		)
 	}

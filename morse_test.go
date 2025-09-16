@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -254,13 +255,13 @@ func TestMORSE_ValidateFrequency(t *testing.T) {
 			name:        "zero frequency",
 			frequency:   0.0,
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative frequency",
 			frequency:   -14070000.0,
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "frequency too low",
@@ -324,13 +325,13 @@ func TestMORSE_ValidateRate(t *testing.T) {
 			name:        "zero rate",
 			rate:        0,
 			expectError: true,
-			errorType:   ErrRateInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative rate",
 			rate:        -20,
 			expectError: true,
-			errorType:   ErrRateInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 	}
 
@@ -382,25 +383,25 @@ func TestMORSE_ValidateMessage(t *testing.T) {
 			name:        "empty message",
 			message:     "",
 			expectError: true,
-			errorType:   ErrMessageRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 		{
 			name:        "whitespace only message",
 			message:     "   ",
 			expectError: true,
-			errorType:   ErrMessageRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 		{
 			name:        "tab only message",
 			message:     "\t",
 			expectError: true,
-			errorType:   ErrMessageRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 		{
 			name:        "newline only message",
 			message:     "\n",
 			expectError: true,
-			errorType:   ErrMessageRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 	}
 

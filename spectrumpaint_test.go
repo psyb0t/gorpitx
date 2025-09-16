@@ -5,16 +5,14 @@ import (
 	"os"
 	"testing"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
-	// Create a temporary test file
-	testFile, err := os.CreateTemp("", "test_spectrum_*.rgb")
-	require.NoError(t, err)
-	defer os.Remove(testFile.Name())
-	testFile.Close()
+	// Use fixture file for testing
+	testFile := ".fixtures/test_spectrum_320x100.Y"
 
 	tests := []struct {
 		name        string
@@ -25,31 +23,31 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "valid complete args",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   434000000.0, // 434 MHz in Hz
 				"excursion":   100000.0,    // 100 kHz
 			},
 			expectError: false,
-			expectArgs:  []string{testFile.Name(), "434000000", "100000"},
+			expectArgs:  []string{testFile, "434000000", "100000"},
 		},
 		{
 			name: "valid args without excursion",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   144000000.0, // 144 MHz in Hz
 			},
 			expectError: false,
-			expectArgs:  []string{testFile.Name(), "144000000"},
+			expectArgs:  []string{testFile, "144000000"},
 		},
 		{
 			name: "valid args different frequency",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   28000000.0, // 28 MHz in Hz
 				"excursion":   50000.0,    // 50 kHz
 			},
 			expectError: false,
-			expectArgs:  []string{testFile.Name(), "28000000", "50000"},
+			expectArgs:  []string{testFile, "28000000", "50000"},
 		},
 		{
 			name: "missing picture file",
@@ -80,7 +78,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "missing frequency",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"excursion":   100000.0,
 			},
 			expectError: true,
@@ -88,7 +86,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "zero frequency",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   0.0,
 				"excursion":   100000.0,
 			},
@@ -97,7 +95,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "negative frequency",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   -434000000.0,
 				"excursion":   100000.0,
 			},
@@ -106,7 +104,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "frequency too low",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   1000.0, // 1 kHz - below minimum
 				"excursion":   100000.0,
 			},
@@ -115,7 +113,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "frequency too high",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   2000000000.0, // 2 GHz - above maximum
 				"excursion":   100000.0,
 			},
@@ -124,7 +122,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "zero excursion",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   434000000.0,
 				"excursion":   0.0,
 			},
@@ -133,7 +131,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "negative excursion",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   434000000.0,
 				"excursion":   -100000.0,
 			},
@@ -142,7 +140,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 		{
 			name: "invalid json",
 			input: map[string]any{
-				"pictureFile": testFile.Name(),
+				"pictureFile": testFile,
 				"frequency":   "not_a_number",
 				"excursion":   100000.0,
 			},
@@ -239,13 +237,13 @@ func TestSPECTRUMPAINT_ValidatePictureFile(t *testing.T) {
 			name:        "empty picture file",
 			pictureFile: "",
 			expectError: true,
-			errorType:   ErrPictureFileRequired,
+			errorType:   commonerrors.ErrRequiredFieldNotSet,
 		},
 		{
 			name:        "nonexistent file",
 			pictureFile: "/nonexistent/file.rgb",
 			expectError: true,
-			errorType:   ErrPictureFileNotFound,
+			errorType:   commonerrors.ErrFileNotFound,
 		},
 	}
 
@@ -297,13 +295,13 @@ func TestSPECTRUMPAINT_ValidateFrequency(t *testing.T) {
 			name:        "zero frequency",
 			frequency:   0.0,
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative frequency",
 			frequency:   -434000000.0,
 			expectError: true,
-			errorType:   ErrFreqNegative,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "frequency too low",
@@ -357,13 +355,13 @@ func TestSPECTRUMPAINT_ValidateExcursion(t *testing.T) {
 			name:        "zero excursion",
 			excursion:   floatPtr(0.0),
 			expectError: true,
-			errorType:   ErrExcursionInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative excursion",
 			excursion:   floatPtr(-100000.0),
 			expectError: true,
-			errorType:   ErrExcursionInvalid,
+			errorType:   commonerrors.ErrInvalidValue,
 		},
 	}
 
