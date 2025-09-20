@@ -159,7 +159,7 @@ func TestMORSE_ParseArgs(t *testing.T) {
 			inputBytes, err := json.Marshal(tt.input)
 			require.NoError(t, err)
 
-			args, err := morse.ParseArgs(inputBytes)
+			args, _, err := morse.ParseArgs(inputBytes)
 
 			if tt.expectError {
 				assert.Error(t, err)

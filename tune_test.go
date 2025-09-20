@@ -120,7 +120,7 @@ func TestTUNE_ParseArgs(t *testing.T) {
 			inputBytes, err := json.Marshal(tt.input)
 			require.NoError(t, err)
 
-			args, err := tune.ParseArgs(inputBytes)
+			args, _, err := tune.ParseArgs(inputBytes)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -142,14 +142,14 @@ func TestTUNE_BuildArgs(t *testing.T) {
 		{
 			name: "frequency only",
 			tune: TUNE{
-				Frequency: floatPtr(434000000.0),
+				Frequency: 434000000.0,
 			},
 			expectArgs: []string{"-f", "434000000"},
 		},
 		{
 			name: "frequency with exit immediate true",
 			tune: TUNE{
-				Frequency:     floatPtr(434000000.0),
+				Frequency:     434000000.0,
 				ExitImmediate: boolPtr(true),
 			},
 			expectArgs: []string{"-f", "434000000", "-e"},
@@ -157,7 +157,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 		{
 			name: "frequency with exit immediate false",
 			tune: TUNE{
-				Frequency:     floatPtr(434000000.0),
+				Frequency:     434000000.0,
 				ExitImmediate: boolPtr(false),
 			},
 			expectArgs: []string{"-f", "434000000"},
@@ -165,7 +165,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 		{
 			name: "frequency with ppm",
 			tune: TUNE{
-				Frequency: floatPtr(434000000.0),
+				Frequency: 434000000.0,
 				PPM:       floatPtr(2.5),
 			},
 			expectArgs: []string{"-f", "434000000", "-p", "2.5"},
@@ -173,7 +173,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 		{
 			name: "all parameters",
 			tune: TUNE{
-				Frequency:     floatPtr(434000000.0),
+				Frequency:     434000000.0,
 				ExitImmediate: boolPtr(true),
 				PPM:           floatPtr(1.5),
 			},
@@ -192,53 +192,47 @@ func TestTUNE_BuildArgs(t *testing.T) {
 func TestTUNE_ValidateFreq(t *testing.T) {
 	tests := []struct {
 		name        string
-		frequency   *float64
+		frequency   float64
 		expectError bool
 		errorType   error
 	}{
 		{
-			name:        "nil frequency",
-			frequency:   nil,
-			expectError: true,
-			errorType:   commonerrors.ErrRequiredFieldNotSet,
-		},
-		{
 			name:        "zero frequency",
-			frequency:   floatPtr(0.0),
+			frequency:   0.0,
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative frequency",
-			frequency:   floatPtr(-100000.0),
+			frequency:   -100000.0,
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "frequency too low",
-			frequency:   floatPtr(1000.0), // 1 kHz
+			frequency:   1000.0, // 1 kHz
 			expectError: true,
 			errorType:   ErrFreqOutOfRange,
 		},
 		{
 			name:        "frequency too high",
-			frequency:   floatPtr(2000000000.0), // 2 GHz
+			frequency:   2000000000.0, // 2 GHz
 			expectError: true,
 			errorType:   ErrFreqOutOfRange,
 		},
 		{
 			name:        "valid minimum frequency",
-			frequency:   floatPtr(50000.0), // 50 kHz
+			frequency:   50000.0, // 50 kHz
 			expectError: false,
 		},
 		{
 			name:        "valid typical frequency",
-			frequency:   floatPtr(434000000.0), // 434 MHz
+			frequency:   434000000.0, // 434 MHz
 			expectError: false,
 		},
 		{
 			name:        "valid maximum frequency",
-			frequency:   floatPtr(1500000000.0), // 1500 MHz
+			frequency:   1500000000.0, // 1500 MHz
 			expectError: false,
 		},
 	}
@@ -322,14 +316,14 @@ func TestTUNE_Validate(t *testing.T) {
 		{
 			name: "valid minimal tune",
 			tune: TUNE{
-				Frequency: floatPtr(434000000.0),
+				Frequency: 434000000.0,
 			},
 			expectError: false,
 		},
 		{
 			name: "valid complete tune",
 			tune: TUNE{
-				Frequency:     floatPtr(434000000.0),
+				Frequency:     434000000.0,
 				ExitImmediate: boolPtr(true),
 				PPM:           floatPtr(2.5),
 			},
@@ -346,7 +340,7 @@ func TestTUNE_Validate(t *testing.T) {
 		{
 			name: "invalid - negative frequency",
 			tune: TUNE{
-				Frequency: floatPtr(-434000000.0),
+				Frequency: -434000000.0,
 				PPM:       floatPtr(2.5),
 			},
 			expectError: true,
@@ -354,7 +348,7 @@ func TestTUNE_Validate(t *testing.T) {
 		{
 			name: "invalid - negative ppm",
 			tune: TUNE{
-				Frequency: floatPtr(434000000.0),
+				Frequency: 434000000.0,
 				PPM:       floatPtr(-1.0),
 			},
 			expectError: true,
@@ -374,11 +368,3 @@ func TestTUNE_Validate(t *testing.T) {
 	}
 }
 
-// Helper functions for test pointer creation
-func floatPtr(f float64) *float64 {
-	return &f
-}
-
-func boolPtr(b bool) *bool {
-	return &b
-}

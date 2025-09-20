@@ -199,3 +199,16 @@ func TestFrequencyConstants(t *testing.T) {
 	// Test that max > min - basic fucking logic
 	assert.Greater(t, maxFreqKHz, minFreqKHz)
 }
+
+// Helper functions for creating pointers
+func intPtr(i int) *int {
+	return &i
+}
+
+func floatPtr(f float64) *float64 {
+	return &f
+}
+
+func boolPtr(b bool) *bool {
+	return &b
+}

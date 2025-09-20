@@ -86,7 +86,7 @@ func TestPIFMRDS_ParseArgs(t *testing.T) {
 				return
 			}
 
-			args, err := module.ParseArgs(inputBytes)
+			args, _, err := module.ParseArgs(inputBytes)
 
 			if tt.expectError {
 				assert.Error(t, err)

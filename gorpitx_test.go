@@ -144,21 +144,23 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	modules := rpitx.GetSupportedModules()
 
 	// Should return all registered modules
-	assert.Len(t, modules, 5)
+	assert.Len(t, modules, 6)
 	assert.Contains(t, modules, ModuleNamePIFMRDS)
 	assert.Contains(t, modules, ModuleNameTUNE)
 	assert.Contains(t, modules, ModuleNameMORSE)
 	assert.Contains(t, modules, ModuleNameSPECTRUMPAINT)
 	assert.Contains(t, modules, ModuleNamePICHIRP)
+	assert.Contains(t, modules, ModuleNamePOCSAG)
 
 	// Should return a new slice each time (checking length consistency)
 	modules2 := rpitx.GetSupportedModules()
-	assert.Len(t, modules2, 5)
+	assert.Len(t, modules2, 6)
 	assert.Contains(t, modules2, ModuleNamePIFMRDS)
 	assert.Contains(t, modules2, ModuleNameTUNE)
 	assert.Contains(t, modules2, ModuleNameMORSE)
 	assert.Contains(t, modules2, ModuleNameSPECTRUMPAINT)
 	assert.Contains(t, modules2, ModuleNamePICHIRP)
+	assert.Contains(t, modules2, ModuleNamePOCSAG)
 }
 
 func TestRPITX_IsSupportedModule(t *testing.T) {
@@ -795,7 +797,7 @@ func TestRPITX_PrepareCommand_Production(t *testing.T) {
 		t.Fatalf("Failed to marshal args: %v", err)
 	}
 
-	cmdName, cmdArgs, err := rpitx.prepareCommand("pifmrds", argsJSON)
+	cmdName, cmdArgs, _, err := rpitx.prepareCommand("pifmrds", argsJSON)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -842,7 +844,7 @@ func TestRPITX_PrepareCommand_Development(t *testing.T) {
 		t.Fatalf("Failed to marshal args: %v", err)
 	}
 
-	cmdName, cmdArgs, err := rpitx.prepareCommand("pifmrds", argsJSON)
+	cmdName, cmdArgs, _, err := rpitx.prepareCommand("pifmrds", argsJSON)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -861,4 +863,95 @@ func stringPtr(s string) *string {
 
 func contains(slice []string, item string) bool {
 	return slices.Contains(slice, item)
+}
+
+func TestModules_StdinBehavior(t *testing.T) {
+	tests := []struct {
+		name           string
+		module         Module
+		input          map[string]any
+		expectStdinNil bool
+	}{
+		{
+			name:   "TUNE module returns nil stdin",
+			module: &TUNE{},
+			input: map[string]any{
+				"frequency": 434000000,
+			},
+			expectStdinNil: true,
+		},
+		{
+			name:   "MORSE module returns nil stdin",
+			module: &MORSE{},
+			input: map[string]any{
+				"frequency": 14070000,
+				"rate":      20,
+				"message":   "CQ CQ DE N0CALL K",
+			},
+			expectStdinNil: true,
+		},
+		{
+			name:   "PIFMRDS module returns nil stdin",
+			module: &PIFMRDS{},
+			input: map[string]any{
+				"freq":  107.9,
+				"audio": ".fixtures/test.wav",
+			},
+			expectStdinNil: true,
+		},
+		{
+			name:   "PICHIRP module returns nil stdin",
+			module: &PICHIRP{},
+			input: map[string]any{
+				"frequency": 28070000,
+				"bandwidth": 1000,
+				"time":      1,
+			},
+			expectStdinNil: true,
+		},
+		{
+			name:   "SPECTRUMPAINT module returns nil stdin",
+			module: &SPECTRUMPAINT{},
+			input: map[string]any{
+				"pictureFile": ".fixtures/test_spectrum_320x100.Y",
+				"frequency":   28000000,
+			},
+			expectStdinNil: true,
+		},
+		{
+			name:   "POCSAG module returns stdin content",
+			module: &POCSAG{},
+			input: map[string]any{
+				"frequency": 466230000,
+				"messages": []map[string]any{
+					{
+						"address": 123,
+						"message": "Test message",
+					},
+				},
+			},
+			expectStdinNil: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputBytes, err := json.Marshal(tt.input)
+			require.NoError(t, err)
+
+			args, stdin, err := tt.module.ParseArgs(inputBytes)
+
+			// All modules should parse successfully with valid input
+			if tt.expectStdinNil {
+				require.NoError(t, err)
+				assert.NotNil(t, args)
+				assert.Nil(t, stdin, "Module %T should return nil stdin", tt.module)
+			} else {
+				// POCSAG should have stdin content
+				require.NoError(t, err)
+				assert.NotNil(t, args)
+				assert.NotNil(t, stdin, "POCSAG module should return non-nil stdin")
+			}
+		})
+	}
 }

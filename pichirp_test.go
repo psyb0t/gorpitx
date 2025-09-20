@@ -187,7 +187,7 @@ func TestPICHIRP_ParseArgs(t *testing.T) {
 			inputBytes, err := json.Marshal(tt.input)
 			require.NoError(t, err)
 
-			args, err := pichirp.ParseArgs(inputBytes)
+			args, _, err := pichirp.ParseArgs(inputBytes)
 
 			if tt.expectError {
 				assert.Error(t, err)
