@@ -11,8 +11,8 @@ Executes rpitx modules through Go without the usual clusterfuck of manual proces
 **Modules:**
 
 - **pifmrds**: FM broadcasting with RDS data (frequency in MHz)
-- **tune**: Simple carrier frequency generation (frequency in Hz)
-- **pichirp**: Carrier frequency sweep generator (frequency in Hz)
+- **tune**: Simple carrier wave generation (frequency in Hz)
+- **pichirp**: Carrier wave sweep generator (frequency in Hz)
 - **morse**: Morse code transmission (frequency in Hz)
 - **spectrumpaint**: Spectrum painting transmission (frequency in Hz)
 
