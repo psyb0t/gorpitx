@@ -34,13 +34,13 @@ func TestPOCSAG_ParseArgs(t *testing.T) {
 		{
 			name: "valid complete args - all options",
 			input: map[string]any{
-				"frequency":     466230000.0,
-				"baudRate":      1200,
-				"functionBits":  3,
-				"numericMode":   true,
-				"repeatCount":   4,
+				"frequency":      466230000.0,
+				"baudRate":       1200,
+				"functionBits":   3,
+				"numericMode":    true,
+				"repeatCount":    4,
 				"invertPolarity": true,
-				"debug":         true,
+				"debug":          true,
 				"messages": []map[string]any{
 					{
 						"address": 123456,
@@ -49,7 +49,9 @@ func TestPOCSAG_ParseArgs(t *testing.T) {
 				},
 			},
 			expectError: false,
-			expectArgs:  []string{"-f", "466230000", "-r", "1200", "-b", "3", "-n", "-t", "4", "-i", "-d"},
+			expectArgs: []string{
+				"-f", "466230000", "-r", "1200", "-b", "3", "-n", "-t", "4", "-i", "-d",
+			},
 		},
 		{
 			name: "valid multiple messages",
@@ -74,7 +76,7 @@ func TestPOCSAG_ParseArgs(t *testing.T) {
 			name: "valid with different baud rates",
 			input: map[string]any{
 				"frequency": 466230000,
-				"baudRate": 2400,
+				"baudRate":  2400,
 				"messages": []map[string]any{
 					{
 						"address": 789,
@@ -88,7 +90,7 @@ func TestPOCSAG_ParseArgs(t *testing.T) {
 		{
 			name: "valid with function bits variations",
 			input: map[string]any{
-				"frequency": 466230000,
+				"frequency":    466230000,
 				"functionBits": 0,
 				"messages": []map[string]any{
 					{
@@ -322,6 +324,7 @@ func TestPOCSAG_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -353,13 +356,13 @@ func TestPOCSAG_BuildArgs(t *testing.T) {
 		{
 			name: "complete configuration",
 			pocsag: POCSAG{
-				Frequency:       466230000.0,
-				BaudRate:        intPtr(1200),
-				FunctionBits:    intPtr(3),
-				NumericMode:     boolPtr(true),
-				RepeatCount:     intPtr(4),
-				InvertPolarity:  boolPtr(true),
-				Debug:           boolPtr(true),
+				Frequency:      466230000.0,
+				BaudRate:       intPtr(1200),
+				FunctionBits:   intPtr(3),
+				NumericMode:    boolPtr(true),
+				RepeatCount:    intPtr(4),
+				InvertPolarity: boolPtr(true),
+				Debug:          boolPtr(true),
 				Messages: []POCSAGMessage{
 					{
 						Address: 123456,
@@ -367,7 +370,9 @@ func TestPOCSAG_BuildArgs(t *testing.T) {
 					},
 				},
 			},
-			expectArgs: []string{"-f", "466230000", "-r", "1200", "-b", "3", "-n", "-t", "4", "-i", "-d"},
+			expectArgs: []string{
+				"-f", "466230000", "-r", "1200", "-b", "3", "-n", "-t", "4", "-i", "-d",
+			},
 		},
 		{
 			name: "multiple messages",
@@ -418,9 +423,9 @@ func TestPOCSAG_BuildArgs(t *testing.T) {
 
 func TestPOCSAG_Stdin(t *testing.T) {
 	tests := []struct {
-		name           string
-		pocsag         POCSAG
-		expectedStdin  string
+		name          string
+		pocsag        POCSAG
+		expectedStdin string
 	}{
 		{
 			name: "single message",
@@ -517,7 +522,8 @@ func TestPOCSAG_ParseArgs_Stdin(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, stdin)
-	assert.Equal(t, []string{"-f", "466230000"}, args) // Frequency should be in args
+	// Frequency should be in args
+	assert.Equal(t, []string{"-f", "466230000"}, args)
 
 	// Verify stdin content
 	stdinContent, err := io.ReadAll(stdin)
@@ -526,67 +532,17 @@ func TestPOCSAG_ParseArgs_Stdin(t *testing.T) {
 }
 
 func TestPOCSAG_ValidateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorType   error
-	}{
-		{
-			name:        "valid frequency - 466.230 MHz",
-			frequency:   466230000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - minimum (5 kHz)",
-			frequency:   5000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - maximum (1500 MHz)",
-			frequency:   1500000000.0,
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -466230000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "frequency too low (1 kHz)",
-			frequency:   1000.0,
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-		{
-			name:        "frequency too high (2 GHz)",
-			frequency:   2000000000.0,
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-	}
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, FrequencyValidationTest{
+		name:        "valid frequency - 466.230 MHz",
+		frequency:   466230000.0,
+		expectError: false,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pocsag := &POCSAG{Frequency: tt.frequency}
-			err := pocsag.validateFrequency()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-				return
-			}
-
-			assert.NoError(t, err)
+			RunFrequencyValidationTest(t, pocsag.validateFrequency, tt)
 		})
 	}
 }
@@ -651,9 +607,11 @@ func TestPOCSAG_ValidateBaudRate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
+
 				return
 			}
 
@@ -721,9 +679,11 @@ func TestPOCSAG_ValidateFunctionBits(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
+
 				return
 			}
 
@@ -780,9 +740,11 @@ func TestPOCSAG_ValidateRepeatCount(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
+
 				return
 			}
 
@@ -911,9 +873,11 @@ func TestPOCSAG_ValidateMessages(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
+
 				return
 			}
 
@@ -977,7 +941,7 @@ func TestPOCSAG_Validate(t *testing.T) {
 			name: "invalid baud rate",
 			pocsag: POCSAG{
 				Frequency: 466230000.0,
-				BaudRate: intPtr(9600), // Invalid
+				BaudRate:  intPtr(9600), // Invalid
 				Messages: []POCSAGMessage{
 					{
 						Address: 123456,
@@ -990,7 +954,7 @@ func TestPOCSAG_Validate(t *testing.T) {
 		{
 			name: "invalid function bits",
 			pocsag: POCSAG{
-				Frequency: 466230000.0,
+				Frequency:    466230000.0,
 				FunctionBits: intPtr(5), // Invalid
 				Messages: []POCSAGMessage{
 					{
@@ -1004,7 +968,7 @@ func TestPOCSAG_Validate(t *testing.T) {
 		{
 			name: "invalid repeat count",
 			pocsag: POCSAG{
-				Frequency: 466230000.0,
+				Frequency:   466230000.0,
 				RepeatCount: intPtr(0), // Invalid
 				Messages: []POCSAGMessage{
 					{
@@ -1019,7 +983,7 @@ func TestPOCSAG_Validate(t *testing.T) {
 			name: "invalid messages - empty array",
 			pocsag: POCSAG{
 				Frequency: 466230000.0,
-				Messages: []POCSAGMessage{}, // Invalid
+				Messages:  []POCSAGMessage{}, // Invalid
 			},
 			expectError: true,
 		},
@@ -1031,6 +995,7 @@ func TestPOCSAG_Validate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 

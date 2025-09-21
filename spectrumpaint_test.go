@@ -158,6 +158,7 @@ func TestSPECTRUMPAINT_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -171,8 +172,16 @@ func TestSPECTRUMPAINT_BuildArgs(t *testing.T) {
 	// Create a temporary test file
 	testFile, err := os.CreateTemp("", "test_spectrum_*.rgb")
 	require.NoError(t, err)
-	defer os.Remove(testFile.Name())
-	testFile.Close()
+
+	defer func() {
+		if err := os.Remove(testFile.Name()); err != nil {
+			t.Logf("Failed to remove test file: %v", err)
+		}
+	}()
+
+	if err := testFile.Close(); err != nil {
+		t.Logf("Failed to close test file: %v", err)
+	}
 
 	tests := []struct {
 		name       string
@@ -219,8 +228,16 @@ func TestSPECTRUMPAINT_ValidatePictureFile(t *testing.T) {
 	// Create a temporary test file
 	testFile, err := os.CreateTemp("", "test_spectrum_*.rgb")
 	require.NoError(t, err)
-	defer os.Remove(testFile.Name())
-	testFile.Close()
+
+	defer func() {
+		if err := os.Remove(testFile.Name()); err != nil {
+			t.Logf("Failed to remove test file: %v", err)
+		}
+	}()
+
+	if err := testFile.Close(); err != nil {
+		t.Logf("Failed to close test file: %v", err)
+	}
 
 	tests := []struct {
 		name        string
@@ -254,6 +271,7 @@ func TestSPECTRUMPAINT_ValidatePictureFile(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -324,6 +342,7 @@ func TestSPECTRUMPAINT_ValidateFrequency(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -372,6 +391,7 @@ func TestSPECTRUMPAINT_ValidateExcursion(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -386,8 +406,16 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 	// Create a temporary test file
 	testFile, err := os.CreateTemp("", "test_spectrum_*.rgb")
 	require.NoError(t, err)
-	defer os.Remove(testFile.Name())
-	testFile.Close()
+
+	defer func() {
+		if err := os.Remove(testFile.Name()); err != nil {
+			t.Logf("Failed to remove test file: %v", err)
+		}
+	}()
+
+	if err := testFile.Close(); err != nil {
+		t.Logf("Failed to close test file: %v", err)
+	}
 
 	tests := []struct {
 		name        string
@@ -452,4 +480,3 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 		})
 	}
 }
-

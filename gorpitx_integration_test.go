@@ -54,7 +54,9 @@ func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
 	// Stop execution
 	stopErr := rpitx.Stop(ctx)
 	// Stop should succeed or return expected termination errors
-	if stopErr != nil && !errors.Is(stopErr, commonerrors.ErrTerminated) && !errors.Is(stopErr, commonerrors.ErrKilled) {
+	if stopErr != nil &&
+		!errors.Is(stopErr, commonerrors.ErrTerminated) &&
+		!errors.Is(stopErr, commonerrors.ErrKilled) {
 		t.Errorf("unexpected stop error: %v", stopErr)
 	}
 
@@ -62,7 +64,9 @@ func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
 	select {
 	case execErr := <-errCh:
 		// Execution should complete (possibly with expected termination errors)
-		if execErr != nil && !errors.Is(execErr, commonerrors.ErrTerminated) && !errors.Is(execErr, commonerrors.ErrKilled) {
+		if execErr != nil &&
+			!errors.Is(execErr, commonerrors.ErrTerminated) &&
+			!errors.Is(execErr, commonerrors.ErrKilled) {
 			t.Errorf("unexpected execution error: %v", execErr)
 		}
 	case <-time.After(10 * time.Second):
@@ -70,7 +74,9 @@ func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
 	}
 
 	// Verify no longer executing
-	assert.False(t, rpitx.isExecuting.Load(), "RPITX should not be executing after stop")
+	assert.False(
+		t, rpitx.isExecuting.Load(), "RPITX should not be executing after stop",
+	)
 }
 
 func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
@@ -109,7 +115,9 @@ func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
 	// Try to start second execution - should fail with ErrExecuting
 	err = rpitx.Exec(ctx, ModuleNamePIFMRDS, argsBytes, 1*time.Second)
 
-	assert.ErrorIs(t, err, ErrExecuting, "second execution should fail with ErrExecuting")
+	assert.ErrorIs(
+		t, err, ErrExecuting, "second execution should fail with ErrExecuting",
+	)
 
 	// Wait for first execution to complete or timeout
 	select {
@@ -127,7 +135,10 @@ func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
 	}
 
 	// Verify no longer executing
-	assert.False(t, rpitx.isExecuting.Load(), "RPITX should not be executing after completion")
+	assert.False(
+		t, rpitx.isExecuting.Load(),
+		"RPITX should not be executing after completion",
+	)
 }
 
 func TestRPITX_Stop_Integration(t *testing.T) {
@@ -166,7 +177,9 @@ func TestRPITX_Stop_Integration(t *testing.T) {
 	// Stop execution
 	stopErr := rpitx.Stop(ctx)
 	// Stop should succeed or return expected termination errors
-	if stopErr != nil && !errors.Is(stopErr, commonerrors.ErrTerminated) && !errors.Is(stopErr, commonerrors.ErrKilled) {
+	if stopErr != nil &&
+		!errors.Is(stopErr, commonerrors.ErrTerminated) &&
+		!errors.Is(stopErr, commonerrors.ErrKilled) {
 		t.Errorf("unexpected stop error: %v", stopErr)
 	}
 
@@ -179,12 +192,17 @@ func TestRPITX_Stop_Integration(t *testing.T) {
 	}
 
 	// Verify no longer executing
-	assert.False(t, rpitx.isExecuting.Load(), "RPITX should not be executing after stop")
+	assert.False(
+		t, rpitx.isExecuting.Load(), "RPITX should not be executing after stop",
+	)
 
 	// Should be able to start new execution after stop
 	err = rpitx.Exec(ctx, ModuleNamePIFMRDS, argsBytes, 100*time.Millisecond)
 	assert.Error(t, err) // Will timeout but should not be ErrExecuting
-	assert.NotErrorIs(t, err, ErrExecuting, "Should not be busy after previous execution stopped")
+	assert.NotErrorIs(
+		t, err, ErrExecuting,
+		"Should not be busy after previous execution stopped",
+	)
 }
 
 func TestRPITX_DevExecution_Integration(t *testing.T) {
@@ -218,7 +236,10 @@ func TestRPITX_DevExecution_Integration(t *testing.T) {
 	// Dev execution should succeed or timeout (both are acceptable)
 	if err != nil {
 		// Timeout is expected in dev mode due to mock infinite loop
-		assert.Contains(t, err.Error(), "timeout", "Dev execution should timeout due to infinite loop")
+		assert.Contains(
+			t, err.Error(), "timeout",
+			"Dev execution should timeout due to infinite loop",
+		)
 	}
 }
 
@@ -240,7 +261,9 @@ func TestRPITX_DevExecution_InvalidModule_Integration(t *testing.T) {
 	err := rpitx.Exec(ctx, "unknown", []byte(`{"freq": 107.9}`), 1*time.Second)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown", "should contain unknown module error")
+	assert.Contains(
+		t, err.Error(), "unknown", "should contain unknown module error",
+	)
 }
 
 func TestRPITX_DevExecution_InvalidArgs_Integration(t *testing.T) {
@@ -258,10 +281,14 @@ func TestRPITX_DevExecution_InvalidArgs_Integration(t *testing.T) {
 	ctx := context.Background()
 
 	// Should fail with JSON parse error
-	err := rpitx.Exec(ctx, ModuleNamePIFMRDS, []byte(`{invalid json`), 1*time.Second)
+	err := rpitx.Exec(
+		ctx, ModuleNamePIFMRDS, []byte(`{invalid json`), 1*time.Second,
+	)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse args", "should contain parse args error")
+	assert.Contains(
+		t, err.Error(), "failed to parse args", "should contain parse args error",
+	)
 }
 
 func TestRPITX_DevExecution_ParseArgsFailure_Integration(t *testing.T) {
@@ -279,14 +306,19 @@ func TestRPITX_DevExecution_ParseArgsFailure_Integration(t *testing.T) {
 	ctx := context.Background()
 
 	// Should fail because audio file is required
-	err := rpitx.Exec(ctx, ModuleNamePIFMRDS, []byte(`{"freq": 107.9}`), 1*time.Second)
+	err := rpitx.Exec(
+		ctx, ModuleNamePIFMRDS, []byte(`{"freq": 107.9}`), 1*time.Second,
+	)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse args", "should contain parse args error")
+	assert.Contains(
+		t, err.Error(), "failed to parse args", "should contain parse args error",
+	)
 }
 
 func TestRPITX_ProductionExecution_WaitFailure_Integration(t *testing.T) {
-	// Test production execution wait failure using real commander with non-existent command
+	// Test production execution wait failure using real commander with
+	// non-existent command
 	t.Setenv(env.EnvVarName, env.EnvTypeProd)
 
 	// Use real commander to test actual wait failure
@@ -314,7 +346,9 @@ func TestRPITX_ProductionExecution_WaitFailure_Integration(t *testing.T) {
 	err = rpitx.Exec(ctx, ModuleNamePIFMRDS, argsBytes, 1*time.Second)
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to parse args", "should fail during args parsing")
+	assert.Contains(
+		t, err.Error(), "failed to parse args", "should fail during args parsing",
+	)
 }
 
 func TestRPITX_ConcurrentStopCalls_Integration(t *testing.T) {
@@ -342,8 +376,13 @@ func TestRPITX_ConcurrentStopCalls_Integration(t *testing.T) {
 	successCount, notExecutingCount := analyzeStopResults(t, stopErrors)
 
 	// Verify expectations
-	assert.GreaterOrEqual(t, successCount, 1, "At least one stop should succeed")
-	assert.Equal(t, 3, successCount+notExecutingCount, "All stops should either succeed or return ErrNotExecuting")
+	assert.GreaterOrEqual(
+		t, successCount, 1, "At least one stop should succeed",
+	)
+	assert.Equal(
+		t, 3, successCount+notExecutingCount,
+		"All stops should either succeed or return ErrNotExecuting",
+	)
 
 	// Wait for execution to complete
 	select {
@@ -409,7 +448,8 @@ func analyzeStopResults(
 			successCount++
 		case errors.Is(stopErr, ErrNotExecuting):
 			notExecutingCount++
-		case errors.Is(stopErr, commonerrors.ErrTerminated) || errors.Is(stopErr, commonerrors.ErrKilled):
+		case errors.Is(stopErr, commonerrors.ErrTerminated) ||
+			errors.Is(stopErr, commonerrors.ErrKilled):
 			// Process termination errors are expected when stopping
 			successCount++
 
@@ -473,7 +513,11 @@ func startExecutionForStreaming(
 	go func() {
 		defer close(execDone)
 
-		execErr = rpitx.Exec(ctx, ModuleNamePIFMRDS, []byte(`{"freq": 107.9, "audio": ".fixtures/test.wav"}`), 10*time.Second)
+		execErr = rpitx.Exec(
+			ctx, ModuleNamePIFMRDS,
+			[]byte(`{"freq": 107.9, "audio": ".fixtures/test.wav"}`),
+			10*time.Second,
+		)
 	}()
 
 	time.Sleep(50 * time.Millisecond) // Wait briefly for execution to start
@@ -616,7 +660,9 @@ func verifyStreamingResults(
 		t.Errorf("unexpected exec error: %v", *execErr)
 	}
 
-	assert.False(t, rpitx.isExecuting.Load(), "should not be executing after completion")
+	assert.False(
+		t, rpitx.isExecuting.Load(), "should not be executing after completion",
+	)
 
 	// Check collected output
 	streamMu.Lock()
@@ -633,7 +679,10 @@ func verifyStreamingResults(
 	}
 
 	// Verify we got expected output
-	assert.True(t, totalLines > 0, "should have received some output lines from the mock execution")
+	assert.True(
+		t, totalLines > 0,
+		"should have received some output lines from the mock execution",
+	)
 
 	expectedPattern := "mocking execution of pifmrds"
 	for _, line := range receivedLinesCopy {

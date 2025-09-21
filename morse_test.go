@@ -20,11 +20,11 @@ func TestMORSE_ParseArgs(t *testing.T) {
 			name: "valid complete args",
 			input: map[string]any{
 				"frequency": 14070000.0, // 14.070 MHz in Hz
-				"rate":      20,          // 20 dits per minute
-				"message":   "CQ CQ DE N0CALL",
+				"rate":      20,         // 20 dits per minute
+				"message":   "CQ DE N0CALL",
 			},
 			expectError: false,
-			expectArgs:  []string{"14070000", "20", "CQ CQ DE N0CALL"},
+			expectArgs:  []string{"14070000", "20", "CQ DE N0CALL"},
 		},
 		{
 			name: "valid args with different frequency",
@@ -163,6 +163,7 @@ func TestMORSE_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -173,64 +174,38 @@ func TestMORSE_ParseArgs(t *testing.T) {
 }
 
 func TestMORSE_BuildArgs(t *testing.T) {
-	tests := []struct {
-		name       string
-		morse      MORSE
-		expectArgs []string
-	}{
-		{
-			name: "basic morse transmission",
-			morse: MORSE{
-				Frequency: 14070000.0,
-				Rate:      20,
-				Message:   "CQ DE N0CALL",
-			},
-			expectArgs: []string{"14070000", "20", "CQ DE N0CALL"},
-		},
-		{
-			name: "different frequency and rate",
-			morse: MORSE{
-				Frequency: 7040000.0,
-				Rate:      15,
-				Message:   "HELLO WORLD",
-			},
-			expectArgs: []string{"7040000", "15", "HELLO WORLD"},
-		},
-		{
-			name: "high rate transmission",
-			morse: MORSE{
-				Frequency: 28070000.0,
-				Rate:      30,
-				Message:   "TEST MSG",
-			},
-			expectArgs: []string{"28070000", "30", "TEST MSG"},
-		},
-		{
-			name: "message with special characters",
-			morse: MORSE{
-				Frequency: 14070000.0,
-				Rate:      20,
-				Message:   "CQ CQ DE N0CALL/P K",
-			},
-			expectArgs: []string{"14070000", "20", "CQ CQ DE N0CALL/P K"},
-		},
+	tests := []BuildArgsTest{
+		{expectArgs: []string{"14070000", "20", "CQ DE N0CALL"}},
+		{expectArgs: []string{"7040000", "15", "HELLO WORLD"}},
+		{expectArgs: []string{"28070000", "30", "TEST MSG"}},
+		{expectArgs: []string{"14070000", "20", "CQ DE N0CALL/P"}},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := tt.morse.buildArgs()
-			assert.Equal(t, tt.expectArgs, args)
+	testNames := []string{
+		"basic CW transmission",
+		"low frequency CW",
+		"high speed CW",
+		"CW with portable callsign",
+	}
+
+	morseConfigs := []MORSE{
+		{Frequency: 14070000.0, Rate: 20, Message: "CQ DE N0CALL"},
+		{Frequency: 7040000.0, Rate: 15, Message: "HELLO WORLD"},
+		{Frequency: 28070000.0, Rate: 30, Message: "TEST MSG"},
+		{Frequency: 14070000.0, Rate: 20, Message: "CQ DE N0CALL/P"},
+	}
+
+	for i, tt := range tests {
+		t.Run(testNames[i], func(t *testing.T) {
+			morse := morseConfigs[i]
+			RunBuildArgsTest(t, morse.buildArgs, tt)
 		})
 	}
 }
 
 func TestMORSE_ValidateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorType   error
-	}{
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, []FrequencyValidationTest{
 		{
 			name:        "valid frequency 14.070 MHz",
 			frequency:   14070000.0,
@@ -241,55 +216,12 @@ func TestMORSE_ValidateFrequency(t *testing.T) {
 			frequency:   7040000.0,
 			expectError: false,
 		},
-		{
-			name:        "valid minimum frequency",
-			frequency:   50000.0, // 50 kHz
-			expectError: false,
-		},
-		{
-			name:        "valid maximum frequency",
-			frequency:   1500000000.0, // 1500 MHz
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -14070000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "frequency too low",
-			frequency:   1000.0, // 1 kHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-		{
-			name:        "frequency too high",
-			frequency:   2000000000.0, // 2 GHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-	}
+	}...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			morse := &MORSE{Frequency: tt.frequency}
-			err := morse.validateFrequency()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
+			RunFrequencyValidationTest(t, morse.validateFrequency, tt)
 		})
 	}
 }
@@ -342,6 +274,7 @@ func TestMORSE_ValidateRate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -376,7 +309,7 @@ func TestMORSE_ValidateMessage(t *testing.T) {
 		},
 		{
 			name:        "valid message with special chars",
-			message:     "CQ CQ DE N0CALL/P K",
+			message:     "CQ DE N0CALL/P",
 			expectError: false,
 		},
 		{
@@ -412,6 +345,7 @@ func TestMORSE_ValidateMessage(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}

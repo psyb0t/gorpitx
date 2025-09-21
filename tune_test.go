@@ -124,6 +124,7 @@ func TestTUNE_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -244,6 +245,7 @@ func TestTUNE_ValidateFreq(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -297,6 +299,7 @@ func TestTUNE_ValidatePPM(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -367,4 +370,3 @@ func TestTUNE_Validate(t *testing.T) {
 		})
 	}
 }
-

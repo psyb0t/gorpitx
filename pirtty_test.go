@@ -9,13 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestPIRTTY_ParseArgs_Success(t *testing.T) {
 	tests := []struct {
-		name           string
-		input          PIRTTY
-		expectedArgs   []string
-		expectedStdin  bool
+		name          string
+		input         PIRTTY
+		expectedArgs  []string
+		expectedStdin bool
 	}{
 		{
 			name: "basic PIRTTY parameters",
@@ -44,7 +43,9 @@ func TestPIRTTY_ParseArgs_Success(t *testing.T) {
 				SpaceFrequency: intPtr(85),
 				Message:        "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 1234567890",
 			},
-			expectedArgs:  []string{"7040000", "85", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 1234567890"},
+			expectedArgs: []string{
+				"7040000", "85", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 1234567890",
+			},
 			expectedStdin: false,
 		},
 		{
@@ -172,64 +173,17 @@ func TestPIRTTY_ParseArgs_JSONUnmarshalError(t *testing.T) {
 }
 
 func TestPIRTTY_validateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorMsg    string
-	}{
-		{
-			name:        "valid frequency - 14.070 MHz",
-			frequency:   14070000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - 50 kHz (minimum)",
-			frequency:   50000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - 1500 MHz (maximum)",
-			frequency:   1500000000.0,
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorMsg:    "frequency must be positive",
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -100000.0,
-			expectError: true,
-			errorMsg:    "frequency must be positive",
-		},
-		{
-			name:        "frequency too low",
-			frequency:   1000.0, // 1 kHz
-			expectError: true,
-			errorMsg:    "frequency out of RPiTX range",
-		},
-		{
-			name:        "frequency too high",
-			frequency:   2000000000.0, // 2 GHz
-			expectError: true,
-			errorMsg:    "frequency out of RPiTX range",
-		},
-	}
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, FrequencyValidationTest{
+		name:        "valid frequency - 14.070 MHz",
+		frequency:   14070000.0,
+		expectError: false,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pirtty := &PIRTTY{Frequency: tt.frequency}
-			err := pirtty.validateFrequency()
-
-			if tt.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
-			}
+			RunFrequencyValidationTest(t, pirtty.validateFrequency, tt)
 		})
 	}
 }

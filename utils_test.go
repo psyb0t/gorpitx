@@ -3,7 +3,9 @@ package gorpitx
 import (
 	"testing"
 
+	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHzToMHz(t *testing.T) {
@@ -164,7 +166,8 @@ func TestHasValidFreqPrecision(t *testing.T) {
 }
 
 func TestFrequencyConversionRoundTrip(t *testing.T) {
-	// Test that converting kHz -> MHz -> kHz returns original value - math better fucking work
+	// Test that converting kHz -> MHz -> kHz returns original value - math
+	// better fucking work
 	originalKHz := 107900.0
 
 	mhz := kHzToMHz(originalKHz)
@@ -200,7 +203,7 @@ func TestFrequencyConstants(t *testing.T) {
 	assert.Greater(t, maxFreqKHz, minFreqKHz)
 }
 
-// Helper functions for creating pointers
+// Helper functions for creating pointers.
 func intPtr(i int) *int {
 	return &i
 }
@@ -211,4 +214,140 @@ func floatPtr(f float64) *float64 {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+type FrequencyValidationTest struct {
+	name        string
+	frequency   float64
+	expectError bool
+	errorType   error
+	errorMsg    string
+}
+
+func GetStandardFrequencyValidationTests() []FrequencyValidationTest {
+	return []FrequencyValidationTest{
+		{
+			name:        "valid frequency - minimum",
+			frequency:   50000.0,
+			expectError: false,
+		},
+		{
+			name:        "valid frequency - maximum",
+			frequency:   1500000000.0,
+			expectError: false,
+		},
+		{
+			name:        "zero frequency",
+			frequency:   0.0,
+			expectError: true,
+			errorType:   commonerrors.ErrInvalidValue,
+			errorMsg:    "frequency must be positive",
+		},
+		{
+			name:        "negative frequency",
+			frequency:   -431000000.0,
+			expectError: true,
+			errorType:   commonerrors.ErrInvalidValue,
+			errorMsg:    "frequency must be positive",
+		},
+		{
+			name:        "frequency too low",
+			frequency:   1000.0,
+			expectError: true,
+			errorType:   ErrFreqOutOfRange,
+			errorMsg:    "frequency out of RPiTX range",
+		},
+		{
+			name:        "frequency too high",
+			frequency:   2000000000.0,
+			expectError: true,
+			errorType:   ErrFreqOutOfRange,
+			errorMsg:    "frequency out of RPiTX range",
+		},
+	}
+}
+
+func RunFrequencyValidationTest(
+	t *testing.T, validator func() error, tt FrequencyValidationTest,
+) {
+	t.Helper()
+
+	err := validator()
+
+	if tt.expectError {
+		require.Error(t, err)
+
+		if tt.errorType != nil {
+			assert.ErrorIs(t, err, tt.errorType)
+		}
+
+		if tt.errorMsg != "" {
+			assert.Contains(t, err.Error(), tt.errorMsg)
+		}
+	} else {
+		require.NoError(t, err)
+	}
+}
+
+type BuildArgsTest struct {
+	expectArgs []string
+}
+
+func RunBuildArgsTest(t *testing.T, builder func() []string, tt BuildArgsTest) {
+	t.Helper()
+
+	args := builder()
+	assert.Equal(t, tt.expectArgs, args)
+}
+
+type PositiveValidationTest struct {
+	name        string
+	value       float64
+	expectError bool
+	errorType   error
+}
+
+func GetStandardPositiveValidationTests() []PositiveValidationTest {
+	return []PositiveValidationTest{
+		{
+			name:        "valid positive value",
+			value:       100.0,
+			expectError: false,
+		},
+		{
+			name:        "valid small positive value",
+			value:       0.1,
+			expectError: false,
+		},
+		{
+			name:        "zero value",
+			value:       0.0,
+			expectError: true,
+			errorType:   commonerrors.ErrInvalidValue,
+		},
+		{
+			name:        "negative value",
+			value:       -100.0,
+			expectError: true,
+			errorType:   commonerrors.ErrInvalidValue,
+		},
+	}
+}
+
+func RunPositiveValidationTest(
+	t *testing.T, validator func() error, tt PositiveValidationTest,
+) {
+	t.Helper()
+
+	err := validator()
+
+	if tt.expectError {
+		require.Error(t, err)
+
+		if tt.errorType != nil {
+			assert.ErrorIs(t, err, tt.errorType)
+		}
+	} else {
+		require.NoError(t, err)
+	}
 }

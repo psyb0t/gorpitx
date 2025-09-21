@@ -93,7 +93,9 @@ func TestRPITX_Exec_DevEnvironment(t *testing.T) {
 	}
 
 	// Mock the shell command for dev environment
-	mockCommander.ExpectWithMatchers("sh", commander.Exact("-c"), commander.Any()).ReturnError(context.DeadlineExceeded)
+	mockCommander.ExpectWithMatchers(
+		"sh", commander.Exact("-c"), commander.Any(),
+	).ReturnError(context.DeadlineExceeded)
 
 	args := map[string]any{
 		"freq":  107.9,
@@ -144,7 +146,7 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	modules := rpitx.GetSupportedModules()
 
 	// Should return all registered modules
-	assert.Len(t, modules, 9)
+	assert.Len(t, modules, 10)
 	assert.Contains(t, modules, ModuleNamePIFMRDS)
 	assert.Contains(t, modules, ModuleNameTUNE)
 	assert.Contains(t, modules, ModuleNameMORSE)
@@ -154,10 +156,11 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	assert.Contains(t, modules, ModuleNameFT8)
 	assert.Contains(t, modules, ModuleNamePISSSTV)
 	assert.Contains(t, modules, ModuleNamePIRTTY)
+	assert.Contains(t, modules, ModuleNameFSK)
 
 	// Should return a new slice each time (checking length consistency)
 	modules2 := rpitx.GetSupportedModules()
-	assert.Len(t, modules2, 9)
+	assert.Len(t, modules2, 10)
 	assert.Contains(t, modules2, ModuleNamePIFMRDS)
 	assert.Contains(t, modules2, ModuleNameTUNE)
 	assert.Contains(t, modules2, ModuleNameMORSE)
@@ -234,8 +237,10 @@ func TestRPITX_StreamOutputs_DuringExecution(t *testing.T) {
 
 	// Now try to stream outputs - this should work if timing is correct
 	streamStarted := make(chan bool, 1)
+
 	go func() {
 		rpitx.StreamOutputs(stdout, stderr)
+
 		streamStarted <- true
 	}()
 
@@ -250,15 +255,19 @@ func TestRPITX_StreamOutputs_DuringExecution(t *testing.T) {
 		select {
 		case line := <-stdout:
 			t.Logf("Received stdout: %s", line)
+
 			outputReceived = true
 		case line := <-stderr:
 			t.Logf("Received stderr: %s", line)
+
 			outputReceived = true
 		case err := <-execFinished:
 			t.Logf("Execution finished with error: %v", err)
+
 			goto checkResults
 		case <-timeout:
 			t.Log("Test timeout reached")
+
 			goto checkResults
 		}
 	}
@@ -266,7 +275,10 @@ func TestRPITX_StreamOutputs_DuringExecution(t *testing.T) {
 checkResults:
 	// We should have received some output from the mock command
 	if !outputReceived {
-		t.Log("WARNING: No output received - this indicates a timing issue with StreamOutputs")
+		t.Log(
+			"WARNING: No output received - this indicates a timing issue " +
+				"with StreamOutputs",
+		)
 		t.Log("The mock command should output 'mocking execution' every second")
 	}
 
@@ -304,6 +316,7 @@ func TestRPITX_StreamOutputsAsync(t *testing.T) {
 
 	// Start execution after setting up streaming
 	execFinished := make(chan error, 1)
+
 	go func() {
 		err := rpitx.Exec(ctx, ModuleNameMORSE, argsJSON, 2*time.Second)
 		execFinished <- err
@@ -317,22 +330,28 @@ func TestRPITX_StreamOutputsAsync(t *testing.T) {
 		select {
 		case line := <-stdout:
 			t.Logf("Received stdout: %s", line)
+
 			outputReceived = true
 		case line := <-stderr:
 			t.Logf("Received stderr: %s", line)
+
 			outputReceived = true
 		case err := <-execFinished:
 			t.Logf("Execution finished with error: %v", err)
+
 			goto checkResults
 		case <-timeout:
 			t.Log("Test timeout reached")
+
 			goto checkResults
 		}
 	}
 
 checkResults:
 	// Should have received output
-	assert.True(t, outputReceived, "Should have received output from async streaming")
+	assert.True(
+		t, outputReceived, "Should have received output from async streaming",
+	)
 
 	// Clean up
 	instance = nil
@@ -496,7 +515,9 @@ func TestRPITX_Exec_TuneModule(t *testing.T) {
 
 			if !tt.expectError {
 				// Mock successful execution for valid test cases
-				mockCommander.ExpectWithMatchers("sh", commander.Exact("-c"), commander.Any()).ReturnError(context.DeadlineExceeded)
+				mockCommander.ExpectWithMatchers(
+					"sh", commander.Exact("-c"), commander.Any(),
+				).ReturnError(context.DeadlineExceeded)
 			}
 
 			argsBytes, err := json.Marshal(tt.args)
@@ -507,6 +528,7 @@ func TestRPITX_Exec_TuneModule(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -576,7 +598,10 @@ func TestRPITX_ProductionExecution_StartFailure(t *testing.T) {
 	}
 
 	// Mock start failure by returning error from execute
-	mockCommander.Expect("stdbuf", "-oL", "./pifmrds", "-freq", "107.9", "-audio", ".fixtures/test.wav").ReturnError(assert.AnError)
+	mockCommander.Expect(
+		"stdbuf", "-oL", "./pifmrds", "-freq", "107.9",
+		"-audio", ".fixtures/test.wav",
+	).ReturnError(assert.AnError)
 
 	args := map[string]any{
 		"freq":  107.9,
@@ -645,7 +670,8 @@ func TestPIFMRDS_RTValidation_TooLong(t *testing.T) {
 	pifm := &PIFMRDS{
 		Freq:  107.9,
 		Audio: ".fixtures/test.wav",
-		RT:    "This radio text message is way too fucking long for RDS standards and should trigger validation error",
+		RT: "This radio text message is way too fucking long for RDS " +
+			"standards and should trigger validation error",
 	}
 
 	err := pifm.validateRT()
@@ -692,7 +718,8 @@ func TestPIFMRDS_Validate_RTError(t *testing.T) {
 		Audio: ".fixtures/test.wav",
 		PI:    "1234",
 		PS:    "TEST",
-		RT: "This radio text message is way too fucking long for RDS standards and should trigger " +
+		RT: "This radio text message is way too fucking long for RDS " +
+			"standards and should trigger " +
 			"validation error during validate call",
 	}
 
@@ -717,7 +744,9 @@ func TestPIFMRDS_Validate_ControlPipeError(t *testing.T) {
 
 	err := pifm.validate()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "control pipe path cannot be empty when specified")
+	assert.Contains(
+		t, err.Error(), "control pipe path cannot be empty when specified",
+	)
 }
 
 func TestRPITX_StopWithoutExecution(t *testing.T) {
@@ -812,13 +841,20 @@ func TestRPITX_PrepareCommand_Production(t *testing.T) {
 	}
 
 	// Check that cmdArgs contains line buffering and parsed arguments
-	expectedArgs := []string{"-oL", "/home/test/rpitx/pifmrds", "-freq", "100.0", "-audio", ".fixtures/test.wav"}
+	expectedArgs := []string{
+		"-oL", "/home/test/rpitx/pifmrds", "-freq", "100.0",
+		"-audio", ".fixtures/test.wav",
+	}
 	if len(cmdArgs) < len(expectedArgs) {
-		t.Errorf("Expected cmdArgs to have at least %d elements, got: %v", len(expectedArgs), cmdArgs)
+		t.Errorf(
+			"Expected cmdArgs to have at least %d elements, got: %v",
+			len(expectedArgs), cmdArgs,
+		)
 	}
 
 	// Check key elements are present
-	if !contains(cmdArgs, "-oL") || !contains(cmdArgs, "/home/test/rpitx/pifmrds") {
+	if !contains(cmdArgs, "-oL") ||
+		!contains(cmdArgs, "/home/test/rpitx/pifmrds") {
 		t.Errorf("Expected cmdArgs to contain stdbuf args, got: %v", cmdArgs)
 	}
 
@@ -890,7 +926,7 @@ func TestModules_StdinBehavior(t *testing.T) {
 			input: map[string]any{
 				"frequency": 14070000,
 				"rate":      20,
-				"message":   "CQ CQ DE N0CALL K",
+				"message":   "CQ DE N0CALL",
 			},
 			expectStdinNil: true,
 		},

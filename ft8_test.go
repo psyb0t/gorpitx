@@ -36,7 +36,10 @@ func TestFT8_ParseArgs(t *testing.T) {
 				"repeat":    true,
 			},
 			expectError: false,
-			expectArgs:  []string{"-f", "14074000", "-m", "K0HAM W5XYZ", "-p", "2.5", "-o", "1240", "-s", "1", "-r"},
+			expectArgs: []string{
+				"-f", "14074000", "-m", "K0HAM W5XYZ", "-p", "2.5",
+				"-o", "1240", "-s", "1", "-r",
+			},
 		},
 		{
 			name: "valid with ppm only",
@@ -196,6 +199,7 @@ func TestFT8_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -224,19 +228,42 @@ func TestFT8_BuildArgs(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "K0HAM W5XYZ",
-				PPM:       func() *float64 { v := 2.5; return &v }(),
-				Offset:    func() *float64 { v := 1240.0; return &v }(),
-				Slot:      func() *int { v := 1; return &v }(),
-				Repeat:    func() *bool { v := true; return &v }(),
+				PPM: func() *float64 {
+					v := 2.5
+
+					return &v
+				}(),
+				Offset: func() *float64 {
+					v := 1240.0
+
+					return &v
+				}(),
+				Slot: func() *int {
+					v := 1
+
+					return &v
+				}(),
+				Repeat: func() *bool {
+					v := true
+
+					return &v
+				}(),
 			},
-			expectArgs: []string{"-f", "14074000", "-m", "K0HAM W5XYZ", "-p", "2.5", "-o", "1240", "-s", "1", "-r"},
+			expectArgs: []string{
+				"-f", "14074000", "-m", "K0HAM W5XYZ", "-p", "2.5",
+				"-o", "1240", "-s", "1", "-r",
+			},
 		},
 		{
 			name: "with negative ppm",
 			ft8: FT8{
 				Frequency: 7074000.0,
 				Message:   "CQ K9ABC EM69",
-				PPM:       func() *float64 { v := -1.5; return &v }(),
+				PPM: func() *float64 {
+					v := -1.5
+
+					return &v
+				}(),
 			},
 			expectArgs: []string{"-f", "7074000", "-m", "CQ K9ABC EM69", "-p", "-1.5"},
 		},
@@ -245,7 +272,11 @@ func TestFT8_BuildArgs(t *testing.T) {
 			ft8: FT8{
 				Frequency: 21074000.0,
 				Message:   "VE3XYZ K1AB",
-				Offset:    func() *float64 { v := 2000.0; return &v }(),
+				Offset: func() *float64 {
+					v := 2000.0
+
+					return &v
+				}(),
 			},
 			expectArgs: []string{"-f", "21074000", "-m", "VE3XYZ K1AB", "-o", "2000"},
 		},
@@ -254,7 +285,11 @@ func TestFT8_BuildArgs(t *testing.T) {
 			ft8: FT8{
 				Frequency: 28074000.0,
 				Message:   "W6QAR JA1XYZ",
-				Slot:      func() *int { v := 0; return &v }(),
+				Slot: func() *int {
+					v := 0
+
+					return &v
+				}(),
 			},
 			expectArgs: []string{"-f", "28074000", "-m", "W6QAR JA1XYZ", "-s", "0"},
 		},
@@ -263,7 +298,11 @@ func TestFT8_BuildArgs(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "CQ DX KL7ABC",
-				Slot:      func() *int { v := 2; return &v }(),
+				Slot: func() *int {
+					v := 2
+
+					return &v
+				}(),
 			},
 			expectArgs: []string{"-f", "14074000", "-m", "CQ DX KL7ABC", "-s", "2"},
 		},
@@ -272,7 +311,11 @@ func TestFT8_BuildArgs(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "N5QAM 73",
-				Repeat:    func() *bool { v := false; return &v }(),
+				Repeat: func() *bool {
+					v := false
+
+					return &v
+				}(),
 			},
 			expectArgs: []string{"-f", "14074000", "-m", "N5QAM 73"},
 		},
@@ -287,12 +330,8 @@ func TestFT8_BuildArgs(t *testing.T) {
 }
 
 func TestFT8_ValidateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorType   error
-	}{
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, []FrequencyValidationTest{
 		{
 			name:        "valid frequency 14.074 MHz",
 			frequency:   14074000.0,
@@ -303,55 +342,12 @@ func TestFT8_ValidateFrequency(t *testing.T) {
 			frequency:   7074000.0,
 			expectError: false,
 		},
-		{
-			name:        "valid minimum frequency",
-			frequency:   50000.0, // 50 kHz
-			expectError: false,
-		},
-		{
-			name:        "valid maximum frequency",
-			frequency:   1500000000.0, // 1500 MHz
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -14074000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "frequency too low",
-			frequency:   1000.0, // 1 kHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-		{
-			name:        "frequency too high",
-			frequency:   2000000000.0, // 2 GHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-	}
+	}...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ft8 := &FT8{Frequency: tt.frequency}
-			err := ft8.validateFrequency()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
+			RunFrequencyValidationTest(t, ft8.validateFrequency, tt)
 		})
 	}
 }
@@ -406,8 +402,9 @@ func TestFT8_ValidateMessage(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "any length message allowed",
-			message:     "VK2ABC G0XYZ 73 THIS IS A VERY LONG MESSAGE FOR TESTING PURPOSES",
+			name: "any length message allowed",
+			message: "VK2ABC G0XYZ 73 THIS IS A VERY LONG MESSAGE FOR TESTING " +
+				"PURPOSES",
 			expectError: false,
 		},
 	}
@@ -419,6 +416,7 @@ func TestFT8_ValidateMessage(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -441,18 +439,30 @@ func TestFT8_ValidatePPM(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "positive ppm",
-			ppm:         func() *float64 { v := 2.5; return &v }(),
+			name: "positive ppm",
+			ppm: func() *float64 {
+				v := 2.5
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "negative ppm",
-			ppm:         func() *float64 { v := -1.5; return &v }(),
+			name: "negative ppm",
+			ppm: func() *float64 {
+				v := -1.5
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "zero ppm",
-			ppm:         func() *float64 { v := 0.0; return &v }(),
+			name: "zero ppm",
+			ppm: func() *float64 {
+				v := 0.0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 	}
@@ -484,34 +494,58 @@ func TestFT8_ValidateOffset(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid offset default",
-			offset:      func() *float64 { v := 1240.0; return &v }(),
+			name: "valid offset default",
+			offset: func() *float64 {
+				v := 1240.0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "valid offset minimum",
-			offset:      func() *float64 { v := 0.0; return &v }(),
+			name: "valid offset minimum",
+			offset: func() *float64 {
+				v := 0.0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "valid offset maximum",
-			offset:      func() *float64 { v := 2500.0; return &v }(),
+			name: "valid offset maximum",
+			offset: func() *float64 {
+				v := 2500.0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "valid offset mid-range",
-			offset:      func() *float64 { v := 1500.0; return &v }(),
+			name: "valid offset mid-range",
+			offset: func() *float64 {
+				v := 1500.0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "offset too low",
-			offset:      func() *float64 { v := -100.0; return &v }(),
+			name: "offset too low",
+			offset: func() *float64 {
+				v := -100.0
+
+				return &v
+			}(),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
-			name:        "offset too high",
-			offset:      func() *float64 { v := 3000.0; return &v }(),
+			name: "offset too high",
+			offset: func() *float64 {
+				v := 3000.0
+
+				return &v
+			}(),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
@@ -524,6 +558,7 @@ func TestFT8_ValidateOffset(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -547,29 +582,49 @@ func TestFT8_ValidateSlot(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "valid slot 0",
-			slot:        func() *int { v := 0; return &v }(),
+			name: "valid slot 0",
+			slot: func() *int {
+				v := 0
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "valid slot 1",
-			slot:        func() *int { v := 1; return &v }(),
+			name: "valid slot 1",
+			slot: func() *int {
+				v := 1
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "valid slot 2 (always)",
-			slot:        func() *int { v := 2; return &v }(),
+			name: "valid slot 2 (always)",
+			slot: func() *int {
+				v := 2
+
+				return &v
+			}(),
 			expectError: false,
 		},
 		{
-			name:        "invalid slot negative",
-			slot:        func() *int { v := -1; return &v }(),
+			name: "invalid slot negative",
+			slot: func() *int {
+				v := -1
+
+				return &v
+			}(),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
-			name:        "invalid slot too high",
-			slot:        func() *int { v := 3; return &v }(),
+			name: "invalid slot too high",
+			slot: func() *int {
+				v := 3
+
+				return &v
+			}(),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
@@ -582,6 +637,7 @@ func TestFT8_ValidateSlot(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -611,10 +667,26 @@ func TestFT8_Validate(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "K0HAM W5XYZ",
-				PPM:       func() *float64 { v := 2.5; return &v }(),
-				Offset:    func() *float64 { v := 1240.0; return &v }(),
-				Slot:      func() *int { v := 1; return &v }(),
-				Repeat:    func() *bool { v := true; return &v }(),
+				PPM: func() *float64 {
+					v := 2.5
+
+					return &v
+				}(),
+				Offset: func() *float64 {
+					v := 1240.0
+
+					return &v
+				}(),
+				Slot: func() *int {
+					v := 1
+
+					return &v
+				}(),
+				Repeat: func() *bool {
+					v := true
+
+					return &v
+				}(),
 			},
 			expectError: false,
 		},
@@ -639,7 +711,11 @@ func TestFT8_Validate(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "TEST",
-				Offset:    func() *float64 { v := 3000.0; return &v }(),
+				Offset: func() *float64 {
+					v := 3000.0
+
+					return &v
+				}(),
 			},
 			expectError: true,
 		},
@@ -648,7 +724,11 @@ func TestFT8_Validate(t *testing.T) {
 			ft8: FT8{
 				Frequency: 14074000.0,
 				Message:   "TEST",
-				Slot:      func() *int { v := 3; return &v }(),
+				Slot: func() *int {
+					v := 3
+
+					return &v
+				}(),
 			},
 			expectError: true,
 		},

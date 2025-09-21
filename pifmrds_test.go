@@ -25,7 +25,8 @@ func TestPIFMRDS_ParseArgs(t *testing.T) {
 			},
 			expectError: false,
 			expectArgs: []string{
-				"-freq", "107.9", "-audio", ".fixtures/test.wav", "-pi", "ABCD", "-ps", "TestPS", "-rt", "Test Radio Text",
+				"-freq", "107.9", "-audio", ".fixtures/test.wav", "-pi", "ABCD",
+				"-ps", "TestPS", "-rt", "Test Radio Text",
 			},
 		},
 		{
@@ -72,10 +73,13 @@ func TestPIFMRDS_ParseArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create test audio file for file existence check - we're not savages who skip validation
+			// Create test audio file for file existence check - we're not savages
+			// who skip validation
 			if audioPath, ok := tt.input["audio"].(string); ok && audioPath != "" {
-				// Skip file creation for this unit test - we'll mock it because we're not fucking around with real files
-				_ = audioPath // acknowledge we got the path but aren't using it in unit tests
+				// Skip file creation for this unit test - we'll mock it because
+				// we're not fucking around with real files
+				// acknowledge we got the path but aren't using it in unit tests
+				_ = audioPath
 			}
 
 			module := &PIFMRDS{}
@@ -103,7 +107,8 @@ func TestPIFMRDS_ParseArgs(t *testing.T) {
 			// Check that we got some args back or this whole thing is pointless
 			assert.NotEmpty(t, args)
 
-			// Check frequency is always present for valid cases - no freq, no fucking transmission
+			// Check frequency is always present for valid cases - no freq,
+			// no fucking transmission
 			assert.Contains(t, args, "-freq")
 			assert.Contains(t, args, "-audio")
 		})

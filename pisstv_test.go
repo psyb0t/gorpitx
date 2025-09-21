@@ -125,6 +125,7 @@ func TestPISSTVModule_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -226,6 +227,7 @@ func TestPISSTVModule_ValidatePictureFile(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
@@ -237,12 +239,8 @@ func TestPISSTVModule_ValidatePictureFile(t *testing.T) {
 }
 
 func TestPISSTVModule_ValidateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorType   error
-	}{
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, []FrequencyValidationTest{
 		{
 			name:        "valid frequency 144.5 MHz",
 			frequency:   144500000.0,
@@ -253,55 +251,12 @@ func TestPISSTVModule_ValidateFrequency(t *testing.T) {
 			frequency:   434000000.0,
 			expectError: false,
 		},
-		{
-			name:        "valid minimum frequency",
-			frequency:   50000.0, // 50 kHz
-			expectError: false,
-		},
-		{
-			name:        "valid maximum frequency",
-			frequency:   1500000000.0, // 1500 MHz
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -144500000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "frequency too low",
-			frequency:   1000.0, // 1 kHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-		{
-			name:        "frequency too high",
-			frequency:   2000000000.0, // 2 GHz
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-	}
+	}...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pisstv := &PISSTV{Frequency: tt.frequency}
-			err := pisstv.validateFrequency()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
+			RunFrequencyValidationTest(t, pisstv.validateFrequency, tt)
 		})
 	}
 }

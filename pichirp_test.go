@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -191,6 +190,7 @@ func TestPICHIRP_ParseArgs(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
@@ -201,227 +201,93 @@ func TestPICHIRP_ParseArgs(t *testing.T) {
 }
 
 func TestPICHIRP_BuildArgs(t *testing.T) {
-	tests := []struct {
-		name       string
-		pichirp    PICHIRP
-		expectArgs []string
-	}{
-		{
-			name: "basic chirp transmission",
-			pichirp: PICHIRP{
-				Frequency: 434000000.0,
-				Bandwidth: 100000.0,
-				Time:      5.0,
-			},
-			expectArgs: []string{"434000000", "100000", "5"},
-		},
-		{
-			name: "different frequency and bandwidth",
-			pichirp: PICHIRP{
-				Frequency: 144500000.0,
-				Bandwidth: 50000.0,
-				Time:      10.5,
-			},
-			expectArgs: []string{"144500000", "50000", "10.5"},
-		},
-		{
-			name: "high frequency with large bandwidth",
-			pichirp: PICHIRP{
-				Frequency: 1296000000.0,
-				Bandwidth: 1000000.0,
-				Time:      0.5,
-			},
-			expectArgs: []string{"1296000000", "1000000", "0.5"},
-		},
-		{
-			name: "low frequency with small bandwidth",
-			pichirp: PICHIRP{
-				Frequency: 28070000.0,
-				Bandwidth: 1000.0,
-				Time:      1.0,
-			},
-			expectArgs: []string{"28070000", "1000", "1"},
-		},
+	tests := []BuildArgsTest{
+		{expectArgs: []string{"434000000", "100000", "5"}},
+		{expectArgs: []string{"144500000", "50000", "10.5"}},
+		{expectArgs: []string{"1296000000", "1000000", "0.5"}},
+		{expectArgs: []string{"28070000", "1000", "1"}},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := tt.pichirp.buildArgs()
-			assert.Equal(t, tt.expectArgs, args)
+	testNames := []string{
+		"UHF chirp sweep",
+		"VHF chirp with decimal time",
+		"microwave wideband chirp",
+		"HF narrowband chirp",
+	}
+
+	chirpConfigs := []PICHIRP{
+		{Frequency: 434000000.0, Bandwidth: 100000.0, Time: 5.0},
+		{Frequency: 144500000.0, Bandwidth: 50000.0, Time: 10.5},
+		{Frequency: 1296000000.0, Bandwidth: 1000000.0, Time: 0.5},
+		{Frequency: 28070000.0, Bandwidth: 1000.0, Time: 1.0},
+	}
+
+	for i, tt := range tests {
+		t.Run(testNames[i], func(t *testing.T) {
+			pichirp := chirpConfigs[i]
+			RunBuildArgsTest(t, pichirp.buildArgs, tt)
 		})
 	}
 }
 
 func TestPICHIRP_ValidateFrequency(t *testing.T) {
-	tests := []struct {
-		name        string
-		frequency   float64
-		expectError bool
-		errorType   error
-	}{
-		{
-			name:        "valid frequency - 434 MHz",
-			frequency:   434000000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - minimum (5 kHz)",
-			frequency:   5000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid frequency - maximum (1500 MHz)",
-			frequency:   1500000000.0,
-			expectError: false,
-		},
-		{
-			name:        "zero frequency",
-			frequency:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative frequency",
-			frequency:   -434000000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "frequency too low (1 kHz)",
-			frequency:   1000.0,
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-		{
-			name:        "frequency too high (2 GHz)",
-			frequency:   2000000000.0,
-			expectError: true,
-			errorType:   ErrFreqOutOfRange,
-		},
-	}
+	tests := GetStandardFrequencyValidationTests()
+	tests = append(tests, FrequencyValidationTest{
+		name:        "valid frequency - 434 MHz",
+		frequency:   434000000.0,
+		expectError: false,
+	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pichirp := &PICHIRP{Frequency: tt.frequency}
-			err := pichirp.validateFrequency()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-				return
-			}
-
-			assert.NoError(t, err)
+			RunFrequencyValidationTest(t, pichirp.validateFrequency, tt)
 		})
 	}
 }
 
 func TestPICHIRP_ValidateBandwidth(t *testing.T) {
-	tests := []struct {
-		name        string
-		bandwidth   float64
-		expectError bool
-		errorType   error
-	}{
+	tests := GetStandardPositiveValidationTests()
+	tests = append(tests, []PositiveValidationTest{
 		{
 			name:        "valid bandwidth - 100 kHz",
-			bandwidth:   100000.0,
-			expectError: false,
-		},
-		{
-			name:        "valid bandwidth - 1 Hz",
-			bandwidth:   1.0,
+			value:       100000.0,
 			expectError: false,
 		},
 		{
 			name:        "valid bandwidth - 1 MHz",
-			bandwidth:   1000000.0,
+			value:       1000000.0,
 			expectError: false,
 		},
-		{
-			name:        "zero bandwidth",
-			bandwidth:   0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative bandwidth",
-			bandwidth:   -100000.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-	}
+	}...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pichirp := &PICHIRP{Bandwidth: tt.bandwidth}
-			err := pichirp.validateBandwidth()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-				return
-			}
-
-			assert.NoError(t, err)
+			pichirp := &PICHIRP{Bandwidth: tt.value}
+			RunPositiveValidationTest(t, pichirp.validateBandwidth, tt)
 		})
 	}
 }
 
 func TestPICHIRP_ValidateTime(t *testing.T) {
-	tests := []struct {
-		name        string
-		time        float64
-		expectError bool
-		errorType   error
-	}{
+	tests := GetStandardPositiveValidationTests()
+	tests = append(tests, []PositiveValidationTest{
 		{
 			name:        "valid time - 5 seconds",
-			time:        5.0,
-			expectError: false,
-		},
-		{
-			name:        "valid time - 0.1 seconds",
-			time:        0.1,
+			value:       5.0,
 			expectError: false,
 		},
 		{
 			name:        "valid time - 60 seconds",
-			time:        60.0,
+			value:       60.0,
 			expectError: false,
 		},
-		{
-			name:        "zero time",
-			time:        0.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-		{
-			name:        "negative time",
-			time:        -5.0,
-			expectError: true,
-			errorType:   commonerrors.ErrInvalidValue,
-		},
-	}
+	}...)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pichirp := &PICHIRP{Time: tt.time}
-			err := pichirp.validateTime()
-
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorType != nil {
-					assert.ErrorIs(t, err, tt.errorType)
-				}
-				return
-			}
-
-			assert.NoError(t, err)
+			pichirp := &PICHIRP{Time: tt.value}
+			RunPositiveValidationTest(t, pichirp.validateTime, tt)
 		})
 	}
 }
@@ -476,6 +342,7 @@ func TestPICHIRP_Validate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
+
 				return
 			}
 
