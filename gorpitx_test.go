@@ -144,7 +144,7 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	modules := rpitx.GetSupportedModules()
 
 	// Should return all registered modules
-	assert.Len(t, modules, 8)
+	assert.Len(t, modules, 9)
 	assert.Contains(t, modules, ModuleNamePIFMRDS)
 	assert.Contains(t, modules, ModuleNameTUNE)
 	assert.Contains(t, modules, ModuleNameMORSE)
@@ -153,16 +153,18 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	assert.Contains(t, modules, ModuleNamePOCSAG)
 	assert.Contains(t, modules, ModuleNameFT8)
 	assert.Contains(t, modules, ModuleNamePISSSTV)
+	assert.Contains(t, modules, ModuleNamePIRTTY)
 
 	// Should return a new slice each time (checking length consistency)
 	modules2 := rpitx.GetSupportedModules()
-	assert.Len(t, modules2, 8)
+	assert.Len(t, modules2, 9)
 	assert.Contains(t, modules2, ModuleNamePIFMRDS)
 	assert.Contains(t, modules2, ModuleNameTUNE)
 	assert.Contains(t, modules2, ModuleNameMORSE)
 	assert.Contains(t, modules2, ModuleNameSPECTRUMPAINT)
 	assert.Contains(t, modules2, ModuleNamePICHIRP)
 	assert.Contains(t, modules2, ModuleNamePOCSAG)
+	assert.Contains(t, modules2, ModuleNamePIRTTY)
 }
 
 func TestRPITX_IsSupportedModule(t *testing.T) {
