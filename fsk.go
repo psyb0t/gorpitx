@@ -87,16 +87,22 @@ func (m *FSK) buildArgs() []string {
 
 // prepareStdin prepares the stdin reader based on input type.
 func (m *FSK) prepareStdin() (io.Reader, error) {
+	var baseReader io.Reader
+
 	switch m.InputType {
 	case InputTypeText:
-		return strings.NewReader(m.Text), nil
+		baseReader = strings.NewReader(m.Text)
 	case InputTypeFile:
 		file, err := os.Open(m.File)
 		if err != nil {
-			return nil, ctxerrors.Wrapf(err, "failed to open file: %s", m.File)
+			return nil, ctxerrors.Wrapf(
+				err,
+				"failed to open file: %s",
+				m.File,
+			)
 		}
 
-		return file, nil
+		baseReader = file
 	default:
 		return nil, ctxerrors.Wrapf(
 			commonerrors.ErrInvalidValue,
@@ -104,6 +110,11 @@ func (m *FSK) prepareStdin() (io.Reader, error) {
 			m.InputType,
 		)
 	}
+
+	return io.MultiReader(
+		baseReader,
+		strings.NewReader("\n"),
+	), nil
 }
 
 // validate validates all FSK parameters.

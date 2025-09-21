@@ -91,9 +91,9 @@ func TestFSK_ParseArgs_Success(t *testing.T) {
 				require.NoError(t, err)
 
 				if tt.input.InputType == InputTypeText {
-					assert.Equal(t, tt.input.Text, string(data))
+					assert.Equal(t, tt.input.Text+"\n", string(data))
 				} else {
-					assert.Equal(t, "test file content", string(data))
+					assert.Equal(t, "test file content\n", string(data))
 				}
 			} else {
 				assert.Nil(t, stdin)
@@ -473,9 +473,9 @@ func TestFSK_prepareStdin(t *testing.T) {
 				require.NoError(t, err)
 
 				if tt.fsk.InputType == InputTypeText {
-					assert.Equal(t, tt.fsk.Text, string(data))
+					assert.Equal(t, tt.fsk.Text+"\n", string(data))
 				} else {
-					assert.Equal(t, testContent, string(data))
+					assert.Equal(t, testContent+"\n", string(data))
 				}
 			}
 		})
