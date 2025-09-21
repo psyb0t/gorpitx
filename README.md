@@ -532,7 +532,7 @@ The PISSTV module requires images in raw RGB binary format:
 - **File Extension**: `.rgb`
 - **Format**: Raw binary RGB data (3 bytes per pixel: R, G, B)
 - **Width**: Exactly 320 pixels (required)
-- **Height**: Variable (typically 256 pixels for Martin 1 standard)
+- **Height**: Variable (Martin 1 standard is 256 pixels, but rpitx doesn't enforce this)
 - **File Size**: width × height × 3 bytes
 
 **Creating RGB Files:**
@@ -605,7 +605,8 @@ Amateur radio frequencies commonly used for SSTV:
 **Technical Notes:**
 
 - Transmission duration depends on image height (approximately 1 minute for 256 lines)
-- Use USB (Upper Side Band) mode for reception
+- Martin 1 standard specifies 256 lines, but gorpitx accepts any height (may be non-standard)
+- Recommended: Use 256-pixel height for compatibility with standard SSTV software
 - Proper amateur radio licensing required for transmission
 - Consider RF filtering to prevent harmonics
 
