@@ -44,7 +44,7 @@ case "$1" in
         echo "  FM                             - Frequency modulation"
         echo "  RAW                            - Just convert + gain (no AGC)"
         echo ""
-        echo "WARNING: USB/LSB presets use heavy bandpass filtering that causes"
+        echo "WARNING: USB/LSB modulations use heavy bandpass filtering that causes"
         echo "         latency, weird modulation, and dropouts on Pi Zero."
         echo "         Use DSB for better performance."
         echo ""

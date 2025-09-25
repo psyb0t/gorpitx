@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # AudioSock Broadcast Script
-# Reads audio from unix socket and transmits via rpitx with CSDR presets
-# Usage: ./audiosock_broadcast.sh <frequency_hz> <unix_socket_path> <sample_rate> <csdr_preset> <gain>
+# Reads audio from unix socket and transmits via rpitx with modulation types
+# Usage: ./audiosock_broadcast.sh <frequency_hz> <unix_socket_path> <sample_rate> <modulation> <gain>
 
 # Configuration
 FREQUENCY="${1:-144500000}"  # Default 144.5 MHz
 SOCKET_PATH="${2:-/tmp/audio_socket}"
 SAMPLE_RATE="${3:-48000}"
-CSDR_PRESET="${4:-FM_NARROW}"  # Default narrow FM preset
+MODULATION="${4:-FM}"          # Default FM modulation
 GAIN="${5:-1.0}"  # Default gain
 LOG_FILE="/tmp/audiosock_broadcast.log"
 
@@ -47,19 +47,19 @@ fi
 
 log_event "Starting AudioSock broadcast on $FREQUENCY Hz from socket $SOCKET_PATH"
 log_event "Sample rate: $SAMPLE_RATE Hz"
-log_event "CSDR preset: $CSDR_PRESET"
+log_event "Modulation: $MODULATION"
 log_event "Gain: $GAIN"
 log_event "Using sendiq path: $SENDIQ_PATH"
 
-# Main AudioSock transmission pipeline using csdr presets
-log_event "Using CSDR preset: $CSDR_PRESET with gain $GAIN"
-log_event "Full command: socat UNIX-CONNECT:$SOCKET_PATH STDOUT | csdr_presets.sh $CSDR_PRESET $GAIN | $SENDIQ_PATH -i /dev/stdin -s $SAMPLE_RATE -f $FREQUENCY -t float"
+# Main AudioSock transmission pipeline using modulation types
+log_event "Using modulation: $MODULATION with gain $GAIN"
+log_event "Full command: socat UNIX-CONNECT:$SOCKET_PATH STDOUT | modulation.sh $MODULATION $GAIN | $SENDIQ_PATH -i /dev/stdin -s $SAMPLE_RATE -f $FREQUENCY -t float"
 
-# Use csdr_presets.sh from same tmp directory
-CSDR_PRESETS_PATH="/tmp/csdr_presets.sh"
+# Use modulation.sh from same tmp directory
+MODULATION_PATH="/tmp/modulation.sh"
 
 socat UNIX-CONNECT:"$SOCKET_PATH" STDOUT | \
-"$CSDR_PRESETS_PATH" "$CSDR_PRESET" "$GAIN" | \
+"$MODULATION_PATH" "$MODULATION" "$GAIN" | \
 "$SENDIQ_PATH" -i /dev/stdin -s "$SAMPLE_RATE" -f "$FREQUENCY" -t float
 
 # Filter params explanation for bandpass_fir_fft_cc:

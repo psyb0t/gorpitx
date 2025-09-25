@@ -23,7 +23,7 @@ func TestScriptExists(t *testing.T) {
 	assert.False(t, scriptExists("/tmp/nonexistent_file.sh"))
 }
 
-func TestEnsureAudioSockPresets(t *testing.T) {
+func TestEnsureAudioSockModulation(t *testing.T) {
 	tests := []struct {
 		name       string
 		moduleName ModuleName
@@ -37,18 +37,18 @@ func TestEnsureAudioSockPresets(t *testing.T) {
 			expectErr:  false,
 		},
 		{
-			name:       "audiosock module with existing presets",
+			name:       "audiosock module with existing modulation",
 			moduleName: ModuleNameAudioSockBroadcast,
 			setupFunc: func() {
-				_ = os.WriteFile(csdrPresetsPath, []byte("test"), 0o600)
+				_ = os.WriteFile(modulationPath, []byte("test"), 0o600)
 			},
 			expectErr: false,
 		},
 		{
-			name:       "audiosock module without presets",
+			name:       "audiosock module without modulation",
 			moduleName: ModuleNameAudioSockBroadcast,
 			setupFunc: func() {
-				_ = os.Remove(csdrPresetsPath)
+				_ = os.Remove(modulationPath)
 			},
 			expectErr: false,
 		},
@@ -58,9 +58,9 @@ func TestEnsureAudioSockPresets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupFunc()
 
-			defer func() { _ = os.Remove(csdrPresetsPath) }()
+			defer func() { _ = os.Remove(modulationPath) }()
 
-			err := ensureAudioSockPresets(tt.moduleName)
+			err := ensureAudioSockModulation(tt.moduleName)
 			if tt.expectErr {
 				assert.Error(t, err)
 			} else {

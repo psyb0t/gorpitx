@@ -14,15 +14,15 @@ const (
 	ModuleNameAudioSockBroadcast ModuleName = "audiosock-broadcast"
 )
 
-type CSDRPresetType = string
+type ModulationType = string
 
 const (
-	CSDRPresetAM  CSDRPresetType = "AM"
-	CSDRPresetDSB CSDRPresetType = "DSB"
-	CSDRPresetUSB CSDRPresetType = "USB"
-	CSDRPresetLSB CSDRPresetType = "LSB"
-	CSDRPresetFM  CSDRPresetType = "FM"
-	CSDRPresetRAW CSDRPresetType = "RAW"
+	ModulationAM  ModulationType = "AM"
+	ModulationDSB ModulationType = "DSB"
+	ModulationUSB ModulationType = "USB"
+	ModulationLSB ModulationType = "LSB"
+	ModulationFM  ModulationType = "FM"
+	ModulationRAW ModulationType = "RAW"
 )
 
 const (
@@ -41,10 +41,10 @@ type AudioSockBroadcast struct {
 	// Default: 48000 Hz
 	SampleRate *int `json:"sampleRate,omitempty"`
 
-	// CSDRPreset specifies the CSDR processing preset mode. Optional parameter.
+	// Modulation specifies the modulation type. Optional parameter.
 	// If not specified, uses default "FM".
 	// Available: AM, DSB, USB, LSB, FM, RAW
-	CSDRPreset *string `json:"csdrPreset,omitempty"`
+	Modulation *string `json:"modulation,omitempty"`
 
 	// Gain specifies the gain multiplier for the audio signal. Optional parameter.
 	// Default: 1.0
@@ -85,13 +85,13 @@ func (m *AudioSockBroadcast) buildArgs() []string {
 
 	args = append(args, strconv.Itoa(sampleRate))
 
-	// Add CSDR preset argument (default if not specified)
-	csdrPreset := CSDRPresetFM
-	if m.CSDRPreset != nil {
-		csdrPreset = *m.CSDRPreset
+	// Add modulation argument (default if not specified)
+	modulation := ModulationFM
+	if m.Modulation != nil {
+		modulation = *m.Modulation
 	}
 
-	args = append(args, csdrPreset)
+	args = append(args, modulation)
 
 	// Add gain argument (default if not specified)
 	gain := 1.0
@@ -118,7 +118,7 @@ func (m *AudioSockBroadcast) validate() error {
 		return err
 	}
 
-	if err := m.validateCSDRPreset(); err != nil {
+	if err := m.validateModulation(); err != nil {
 		return err
 	}
 
@@ -174,30 +174,30 @@ func (m *AudioSockBroadcast) validateSampleRate() error {
 	return nil
 }
 
-// validateCSDRPreset validates the CSDR preset parameter.
-func (m *AudioSockBroadcast) validateCSDRPreset() error {
-	if m.CSDRPreset == nil {
+// validateModulation validates the modulation parameter.
+func (m *AudioSockBroadcast) validateModulation() error {
+	if m.Modulation == nil {
 		return nil // Optional parameter
 	}
 
-	validPresets := []CSDRPresetType{
-		CSDRPresetAM,
-		CSDRPresetDSB,
-		CSDRPresetUSB,
-		CSDRPresetLSB,
-		CSDRPresetFM,
-		CSDRPresetRAW,
+	validModulations := []ModulationType{
+		ModulationAM,
+		ModulationDSB,
+		ModulationUSB,
+		ModulationLSB,
+		ModulationFM,
+		ModulationRAW,
 	}
 
-	preset := *m.CSDRPreset
-	if slices.Contains(validPresets, preset) {
+	modulation := *m.Modulation
+	if slices.Contains(validModulations, modulation) {
 		return nil
 	}
 
 	return ctxerrors.Wrapf(
 		commonerrors.ErrInvalidValue,
-		"invalid CSDR preset: %s, valid presets: %v",
-		preset, validPresets,
+		"invalid modulation: %s, valid modulations: %v",
+		modulation, validModulations,
 	)
 }
 

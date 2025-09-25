@@ -12,7 +12,7 @@ import (
 const (
 	fskScriptPath          = "/tmp/fsk.sh"
 	audioSockBroadcastPath = "/tmp/audiosock_broadcast.sh"
-	csdrPresetsPath        = "/tmp/csdr_presets.sh"
+	modulationPath         = "/tmp/modulation.sh"
 
 	dirPerm    = 0o750
 	scriptPerm = 0o600
@@ -29,10 +29,10 @@ var fskScript string
 //go:embed scripts/audiosock_broadcast.sh
 var audioSockBroadcastScript string
 
-// csdrPresetsScript contains the embedded CSDR presets script
+// modulationScript contains the embedded modulation script
 //
-//go:embed scripts/csdr_presets.sh
-var csdrPresetsScript string
+//go:embed scripts/modulation.sh
+var modulationScript string
 
 // init writes all embedded scripts to filesystem on package initialization.
 //
@@ -65,7 +65,7 @@ func writeAllScripts() {
 	}
 
 	err = os.MkdirAll(
-		filepath.Dir(csdrPresetsPath),
+		filepath.Dir(modulationPath),
 		dirPerm,
 	)
 	if err != nil {
@@ -102,19 +102,19 @@ func writeAllScripts() {
 		logrus.Fatalf("failed to make AudioSock script executable: %v", err)
 	}
 
-	// Write CSDR presets script
+	// Write modulation script
 	err = os.WriteFile(
-		csdrPresetsPath,
-		[]byte(csdrPresetsScript),
+		modulationPath,
+		[]byte(modulationScript),
 		scriptPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to write CSDR presets script: %v", err)
+		logrus.Fatalf("failed to write modulation script: %v", err)
 	}
 
-	err = os.Chmod(csdrPresetsPath, execPerm)
+	err = os.Chmod(modulationPath, execPerm)
 	if err != nil {
-		logrus.Fatalf("failed to make CSDR presets script executable: %v", err)
+		logrus.Fatalf("failed to make modulation script executable: %v", err)
 	}
 }
 
@@ -138,7 +138,7 @@ func EnsureScriptExists(moduleName ModuleName) error {
 	}
 
 	if scriptExists(scriptPath) {
-		return ensureAudioSockPresets(moduleName)
+		return ensureAudioSockModulation(moduleName)
 	}
 
 	return writeScript(moduleName, scriptPath)
@@ -151,14 +151,14 @@ func scriptExists(scriptPath string) bool {
 	return err == nil
 }
 
-// ensureAudioSockPresets ensures CSDR presets exist for AudioSock module.
-func ensureAudioSockPresets(moduleName ModuleName) error {
+// ensureAudioSockModulation ensures modulation script exists for AudioSock.
+func ensureAudioSockModulation(moduleName ModuleName) error {
 	if moduleName != ModuleNameAudioSockBroadcast {
 		return nil
 	}
 
-	if _, err := os.Stat(csdrPresetsPath); err != nil {
-		return ensureCSDRPresetsScript(scriptPerm, execPerm)
+	if _, err := os.Stat(modulationPath); err != nil {
+		return ensureModulationScript(scriptPerm, execPerm)
 	}
 
 	return nil
@@ -183,7 +183,7 @@ func writeScript(moduleName ModuleName, scriptPath string) error {
 		return err
 	}
 
-	return ensureAudioSockPresets(moduleName)
+	return ensureAudioSockModulation(moduleName)
 }
 
 // getScriptContent returns the embedded script content for a module.
@@ -247,28 +247,28 @@ func makeExecutable(scriptPath string) error {
 	return nil
 }
 
-// ensureCSDRPresetsScript writes csdr_presets.sh if it doesn't exist.
-func ensureCSDRPresetsScript(scriptPerm, execPerm os.FileMode) error {
+// ensureModulationScript writes modulation.sh if it doesn't exist.
+func ensureModulationScript(scriptPerm, execPerm os.FileMode) error {
 	// Check if script already exists
-	if _, err := os.Stat(csdrPresetsPath); err == nil {
+	if _, err := os.Stat(modulationPath); err == nil {
 		return nil // Script already exists
 	}
 
 	if err := os.WriteFile(
-		csdrPresetsPath,
-		[]byte(csdrPresetsScript),
+		modulationPath,
+		[]byte(modulationScript),
 		scriptPerm,
 	); err != nil {
 		return ctxerrors.Wrapf(err,
-			"failed to write csdr_presets.sh: %s", csdrPresetsPath)
+			"failed to write modulation.sh: %s", modulationPath)
 	}
 
-	// Make csdr_presets.sh executable
-	if err := os.Chmod(csdrPresetsPath, execPerm); err != nil {
+	// Make modulation.sh executable
+	if err := os.Chmod(modulationPath, execPerm); err != nil {
 		return ctxerrors.Wrapf(
 			err,
-			"failed to make csdr_presets.sh executable: %s",
-			csdrPresetsPath,
+			"failed to make modulation.sh executable: %s",
+			modulationPath,
 		)
 	}
 

@@ -47,11 +47,11 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			},
 		},
 		{
-			name: "custom CSDR preset",
+			name: "custom modulation",
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				CSDRPreset: stringPtr("FM"),
+				Modulation: stringPtr("FM"),
 			},
 			expectedArgs: []string{
 				"144500000", "/tmp/audio_socket", "48000", "FM", "1",
@@ -74,7 +74,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				SocketPath: "/tmp/custom_socket",
 				Frequency:  434000000.0,
 				SampleRate: intPtr(96000),
-				CSDRPreset: stringPtr("USB"),
+				Modulation: stringPtr("USB"),
 				Gain:       floatPtr(3.0),
 			},
 			expectedArgs: []string{
@@ -168,13 +168,13 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			expectedError: "sample rate must be positive",
 		},
 		{
-			name: "invalid CSDR preset",
+			name: "invalid modulation",
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				CSDRPreset: stringPtr("INVALID"),
+				Modulation: stringPtr("INVALID"),
 			},
-			expectedError: "invalid CSDR preset",
+			expectedError: "invalid modulation",
 		},
 		{
 			name: "negative gain",
@@ -370,78 +370,78 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 	}
 }
 
-func TestAudioSockBroadcast_validateCSDRPreset(t *testing.T) {
+func TestAudioSockBroadcast_validateModulation(t *testing.T) {
 	tests := []struct {
 		name        string
-		csdrPreset  *string
+		modulation  *string
 		expectError bool
 		errorMsg    string
 	}{
 		{
-			name:        "nil preset (default)",
-			csdrPreset:  nil,
+			name:        "nil modulation (default)",
+			modulation:  nil,
 			expectError: false,
 		},
 		{
-			name:        "valid AM preset",
-			csdrPreset:  stringPtr("AM"),
+			name:        "valid AM modulation",
+			modulation:  stringPtr("AM"),
 			expectError: false,
 		},
 		{
-			name:        "valid DSB preset",
-			csdrPreset:  stringPtr("DSB"),
+			name:        "valid DSB modulation",
+			modulation:  stringPtr("DSB"),
 			expectError: false,
 		},
 		{
-			name:        "valid USB preset",
-			csdrPreset:  stringPtr("USB"),
+			name:        "valid USB modulation",
+			modulation:  stringPtr("USB"),
 			expectError: false,
 		},
 		{
-			name:        "valid LSB preset",
-			csdrPreset:  stringPtr("LSB"),
+			name:        "valid LSB modulation",
+			modulation:  stringPtr("LSB"),
 			expectError: false,
 		},
 		{
-			name:        "valid FM preset",
-			csdrPreset:  stringPtr("FM"),
+			name:        "valid FM modulation",
+			modulation:  stringPtr("FM"),
 			expectError: false,
 		},
 		{
-			name:        "invalid preset - old WFM",
-			csdrPreset:  stringPtr("WFM"),
+			name:        "invalid modulation - old WFM",
+			modulation:  stringPtr("WFM"),
 			expectError: true,
-			errorMsg:    "invalid CSDR preset",
+			errorMsg:    "invalid modulation",
 		},
 		{
-			name:        "invalid preset - old NFM",
-			csdrPreset:  stringPtr("NFM"),
+			name:        "invalid modulation - old NFM",
+			modulation:  stringPtr("NFM"),
 			expectError: true,
-			errorMsg:    "invalid CSDR preset",
+			errorMsg:    "invalid modulation",
 		},
 		{
-			name:        "valid RAW preset",
-			csdrPreset:  stringPtr("RAW"),
+			name:        "valid RAW modulation",
+			modulation:  stringPtr("RAW"),
 			expectError: false,
 		},
 		{
-			name:        "invalid preset",
-			csdrPreset:  stringPtr("INVALID"),
+			name:        "invalid modulation",
+			modulation:  stringPtr("INVALID"),
 			expectError: true,
-			errorMsg:    "invalid CSDR preset",
+			errorMsg:    "invalid modulation",
 		},
 		{
 			name:        "case sensitive - lowercase",
-			csdrPreset:  stringPtr("fm"),
+			modulation:  stringPtr("fm"),
 			expectError: true,
-			errorMsg:    "invalid CSDR preset",
+			errorMsg:    "invalid modulation",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			asb := &AudioSockBroadcast{CSDRPreset: tt.csdrPreset}
-			err := asb.validateCSDRPreset()
+			asb := &AudioSockBroadcast{Modulation: tt.modulation}
+			err := asb.validateModulation()
 
 			if tt.expectError {
 				require.Error(t, err)
