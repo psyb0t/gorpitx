@@ -42,11 +42,10 @@ type AudioSockBroadcast struct {
 	// Default: 48000 Hz
 	SampleRate *int `json:"sampleRate,omitempty"`
 
-	// CSRPreset specifies the CSDR processing preset mode. Optional parameter.
-	// If not specified, uses default "FM_NARROW".
-	// Available: AM, AM_FAST, AM_CLEAN, USB, USB_FAST, USB_CLEAN, LSB,
-	// LSB_FAST, LSB_CLEAN, FM, FM_NARROW, FM_WIDE, RAW
-	CSRPreset *string `json:"csdrPreset,omitempty"`
+	// CSRDPreset specifies the CSDR processing preset mode. Optional parameter.
+	// If not specified, uses default "NFM".
+	// Available: AM, DSB, USB, LSB, NFM, WFM, RAW
+	CSRDPreset *string `json:"csdrPreset,omitempty"`
 
 	// Gain specifies the gain multiplier for the audio signal. Optional parameter.
 	// Default: 1.0
@@ -89,8 +88,8 @@ func (m *AudioSockBroadcast) buildArgs() []string {
 
 	// Add CSDR preset argument (default if not specified)
 	csdrPreset := CSRDPresetNFM
-	if m.CSRPreset != nil {
-		csdrPreset = *m.CSRPreset
+	if m.CSRDPreset != nil {
+		csdrPreset = *m.CSRDPreset
 	}
 
 	args = append(args, csdrPreset)
@@ -120,7 +119,7 @@ func (m *AudioSockBroadcast) validate() error {
 		return err
 	}
 
-	if err := m.validateCSRPreset(); err != nil {
+	if err := m.validateCSRDPreset(); err != nil {
 		return err
 	}
 
@@ -176,9 +175,9 @@ func (m *AudioSockBroadcast) validateSampleRate() error {
 	return nil
 }
 
-// validateCSRPreset validates the CSDR preset parameter.
-func (m *AudioSockBroadcast) validateCSRPreset() error {
-	if m.CSRPreset == nil {
+// validateCSRDPreset validates the CSDR preset parameter.
+func (m *AudioSockBroadcast) validateCSRDPreset() error {
+	if m.CSRDPreset == nil {
 		return nil // Optional parameter
 	}
 
@@ -191,7 +190,7 @@ func (m *AudioSockBroadcast) validateCSRPreset() error {
 		CSRDPresetRAW,
 	}
 
-	preset := *m.CSRPreset
+	preset := *m.CSRDPreset
 	if slices.Contains(validPresets, preset) {
 		return nil
 	}

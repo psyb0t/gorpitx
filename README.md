@@ -870,7 +870,7 @@ type AudioSockBroadcast struct {
     SocketPath  string   `json:"socketPath"`              // Required, unix socket path for audio input
     Frequency   float64  `json:"frequency"`               // Hz, required, carrier frequency
     SampleRate  *int     `json:"sampleRate,omitempty"`    // Hz, optional, audio sample rate (default: 48000)
-    CSRPreset   *string  `json:"csdrPreset,omitempty"`    // Optional, CSDR processing preset (default: "NFM")
+    CSRDPreset  *string  `json:"csdrPreset,omitempty"`    // Optional, CSDR processing preset (default: "NFM")
     Gain        *float64 `json:"gain,omitempty"`          // Optional, signal gain multiplier (default: 1.0)
 }
 ```
@@ -880,7 +880,7 @@ type AudioSockBroadcast struct {
 - `SocketPath`: Required, unix socket path for audio data input
 - `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
 - `SampleRate`: Optional, positive integer in Hz (default: 48000)
-- `CSRPreset`: Optional, must be valid preset (default: "NFM"). Available: AM, DSB, USB, LSB, NFM, WFM, RAW
+- `CSRDPreset`: Optional, must be valid preset (default: "NFM"). Available: AM, DSB, USB, LSB, NFM, WFM, RAW
 - `Gain`: Optional, non-negative float (default: 1.0)
 
 **AudioSock Broadcast Implementation Details:**
@@ -972,7 +972,7 @@ func floatPtr(f float64) *float64 { return &f }
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  14200000.0,              // 14.200 MHz (20m USB voice)
-    CSRPreset:  stringPtr("USB"),        // USB with AGC - SLOW on Pi Zero
+    CSRDPreset: stringPtr("USB"),        // USB with AGC - SLOW on Pi Zero
     Gain:       floatPtr(2.0),           // Increase gain for voice
 }
 
@@ -980,7 +980,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  14200000.0,              // 14.200 MHz (tune USB or LSB)
-    CSRPreset:  stringPtr("DSB"),        // Double sideband with AGC - FAST
+    CSRDPreset: stringPtr("DSB"),        // Double sideband with AGC - FAST
     Gain:       floatPtr(2.0),           // Increase gain for voice
 }
 
@@ -988,7 +988,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  144500000.0,
-    CSRPreset:  stringPtr("WFM"),        // Wide FM (±75kHz deviation)
+    CSRDPreset: stringPtr("WFM"),        // Wide FM (±75kHz deviation)
     Gain:       floatPtr(0.8),           // Reduce gain to prevent overdeviation
 }
 
@@ -996,7 +996,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  1620000.0,               // 1620 kHz (AM broadcast)
-    CSRPreset:  stringPtr("AM"),         // AM with AGC
+    CSRDPreset: stringPtr("AM"),         // AM with AGC
     Gain:       floatPtr(1.5),           // Moderate gain
 }
 
@@ -1004,7 +1004,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  432100000.0,
-    CSRPreset:  stringPtr("RAW"),        // Minimal processing
+    CSRDPreset: stringPtr("RAW"),        // Minimal processing
     Gain:       floatPtr(3.0),           // Custom gain level
 }
 ```
