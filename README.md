@@ -870,7 +870,7 @@ type AudioSockBroadcast struct {
     SocketPath  string   `json:"socketPath"`              // Required, unix socket path for audio input
     Frequency   float64  `json:"frequency"`               // Hz, required, carrier frequency
     SampleRate  *int     `json:"sampleRate,omitempty"`    // Hz, optional, audio sample rate (default: 48000)
-    CSRDPreset  *string  `json:"csdrPreset,omitempty"`    // Optional, CSDR processing preset (default: "NFM")
+    CSDRPreset  *string  `json:"csdrPreset,omitempty"`    // Optional, CSDR processing preset (default: "FM")
     Gain        *float64 `json:"gain,omitempty"`          // Optional, signal gain multiplier (default: 1.0)
 }
 ```
@@ -880,12 +880,12 @@ type AudioSockBroadcast struct {
 - `SocketPath`: Required, unix socket path for audio data input
 - `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
 - `SampleRate`: Optional, positive integer in Hz (default: 48000)
-- `CSRDPreset`: Optional, must be valid preset (default: "NFM"). Available: AM, DSB, USB, LSB, NFM, WFM, RAW
+- `CSDRPreset`: Optional, must be valid preset (default: "FM"). Available: AM, DSB, USB, LSB, FM, RAW
 - `Gain`: Optional, non-negative float (default: 1.0)
 
 **AudioSock Broadcast Implementation Details:**
 
-AudioSock Broadcast streams audio data from a unix socket and transmits it using preset-based CSDR processing via rpitx. The module reads raw PCM audio data from the socket and processes it through predefined modulation presets. The default preset provides narrow FM transmission (NFM), but users can specify any available modulation type including AM, USB/LSB SSB, wideband FM (WFM), or raw audio processing.
+AudioSock Broadcast streams audio data from a unix socket and transmits it using preset-based CSDR processing via rpitx. The module reads raw PCM audio data from the socket and processes it through predefined modulation presets. The default preset provides FM transmission, but users can specify any available modulation type including AM, USB/LSB SSB, or raw audio processing.
 
 **Audio Data Format:**
 
@@ -920,19 +920,17 @@ unix_socket → csdr_presets.sh [PRESET] [GAIN] → sendiq
 - **DSB**: Double Side Band with AGC - transmits on both USB and LSB (fast)
 - **USB**: Upper Side Band with AGC and bandpass filtering ⚠️ **SLOW on Pi Zero**
 - **LSB**: Lower Side Band with AGC and bandpass filtering ⚠️ **SLOW on Pi Zero**
-- **NFM**: Narrow FM (±2.5kHz deviation) for amateur radio, commercial 2-way
-- **WFM**: Wideband FM (±75kHz deviation) for broadcast FM radio
+- **FM**: Frequency modulation
 - **RAW**: Minimal processing (convert + gain only, no AGC)
 
 ⚠️ **Performance Warning**: USB/LSB presets use heavy `csdr bandpass_fir_fft_cc` filtering that causes latency, weird modulation artifacts, and audio dropouts on Pi Zero. Use DSB presets for better performance - they transmit on both sidebands so you can tune either USB or LSB on your receiver.
 
-**Default NFM Processing Pipeline:**
+**Default FM Processing Pipeline:**
 
 1. **csdr convert_s16_f**: Converts signed 16-bit integers to floating point
-2. **csdr agc_ff**: Automatic gain control to prevent overdeviation
-3. **csdr gain_ff**: Applies user-specified gain multiplier (scaled for FM deviation)
-4. **csdr fmmod_fc**: FM modulation with narrow deviation (2500 Hz * gain)
-5. **sendiq**: Transmits IQ data via rpitx with no fade-in delay
+2. **csdr gain_ff**: Applies user-specified gain multiplier
+3. **csdr fmmod_fc**: FM modulation
+4. **sendiq**: Transmits IQ data via rpitx with no fade-in delay
 
 **Example Usage:**
 
@@ -943,7 +941,7 @@ import (
     "github.com/psyb0t/gorpitx"
 )
 
-// Basic AudioSock broadcast (uses default NFM preset)
+// Basic AudioSock broadcast (uses default FM preset)
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",     // Unix socket path
     Frequency:  144500000.0,             // 144.5 MHz (2m amateur band)
@@ -972,7 +970,7 @@ func floatPtr(f float64) *float64 { return &f }
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  14200000.0,              // 14.200 MHz (20m USB voice)
-    CSRDPreset: stringPtr("USB"),        // USB with AGC - SLOW on Pi Zero
+    CSDRPreset: stringPtr("USB"),        // USB with AGC - SLOW on Pi Zero
     Gain:       floatPtr(2.0),           // Increase gain for voice
 }
 
@@ -980,7 +978,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  14200000.0,              // 14.200 MHz (tune USB or LSB)
-    CSRDPreset: stringPtr("DSB"),        // Double sideband with AGC - FAST
+    CSDRPreset: stringPtr("DSB"),        // Double sideband with AGC - FAST
     Gain:       floatPtr(2.0),           // Increase gain for voice
 }
 
@@ -988,7 +986,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  144500000.0,
-    CSRDPreset: stringPtr("WFM"),        // Wide FM (±75kHz deviation)
+    CSDRPreset: stringPtr("FM"),         // Frequency modulation
     Gain:       floatPtr(0.8),           // Reduce gain to prevent overdeviation
 }
 
@@ -996,7 +994,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  1620000.0,               // 1620 kHz (AM broadcast)
-    CSRDPreset: stringPtr("AM"),         // AM with AGC
+    CSDRPreset: stringPtr("AM"),         // AM with AGC
     Gain:       floatPtr(1.5),           // Moderate gain
 }
 
@@ -1004,7 +1002,7 @@ args := gorpitx.AudioSockBroadcast{
 args := gorpitx.AudioSockBroadcast{
     SocketPath: "/tmp/audio_socket",
     Frequency:  432100000.0,
-    CSRDPreset: stringPtr("RAW"),        // Minimal processing
+    CSDRPreset: stringPtr("RAW"),        // Minimal processing
     Gain:       floatPtr(3.0),           // Custom gain level
 }
 ```
@@ -1043,7 +1041,7 @@ Amateur radio frequencies suitable for voice transmission:
 - **Audio Quality**: Full fidelity limited by sample rate and RF conditions
 - **CPU Usage**: Moderate (~10-15% on Raspberry Pi 4, varies by preset)
 - **Buffer Management**: Automatic via csdr pipeline
-- **Default Transmission Type**: Narrow FM (NFM) - ±2.5kHz deviation, ideal for voice/data
+- **Default Transmission Type**: Frequency modulation (FM) - ideal for voice/data
 
 **Technical Notes:**
 

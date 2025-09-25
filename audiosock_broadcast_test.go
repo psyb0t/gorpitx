@@ -21,7 +21,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Frequency:  144500000.0,
 			},
 			expectedArgs: []string{
-				"144500000", "/tmp/audio_socket", "48000", "NFM", "1",
+				"144500000", "/tmp/audio_socket", "48000", "FM", "1",
 			},
 		},
 		{
@@ -32,7 +32,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				SampleRate: intPtr(96000),
 			},
 			expectedArgs: []string{
-				"434000000", "/tmp/custom_socket", "96000", "NFM", "1",
+				"434000000", "/tmp/custom_socket", "96000", "FM", "1",
 			},
 		},
 		{
@@ -43,7 +43,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				SampleRate: intPtr(22050),
 			},
 			expectedArgs: []string{
-				"1296000000", "/var/tmp/voice_socket", "22050", "NFM", "1",
+				"1296000000", "/var/tmp/voice_socket", "22050", "FM", "1",
 			},
 		},
 		{
@@ -51,10 +51,10 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				CSRDPreset: stringPtr("WFM"),
+				CSDRPreset: stringPtr("FM"),
 			},
 			expectedArgs: []string{
-				"144500000", "/tmp/audio_socket", "48000", "WFM", "1",
+				"144500000", "/tmp/audio_socket", "48000", "FM", "1",
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Gain:       floatPtr(2.5),
 			},
 			expectedArgs: []string{
-				"144500000", "/tmp/audio_socket", "48000", "NFM", "2.5",
+				"144500000", "/tmp/audio_socket", "48000", "FM", "2.5",
 			},
 		},
 		{
@@ -74,7 +74,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				SocketPath: "/tmp/custom_socket",
 				Frequency:  434000000.0,
 				SampleRate: intPtr(96000),
-				CSRDPreset: stringPtr("USB"),
+				CSDRPreset: stringPtr("USB"),
 				Gain:       floatPtr(3.0),
 			},
 			expectedArgs: []string{
@@ -172,7 +172,7 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				CSRDPreset: stringPtr("INVALID"),
+				CSDRPreset: stringPtr("INVALID"),
 			},
 			expectedError: "invalid CSDR preset",
 		},
@@ -335,7 +335,7 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				Frequency:  144500000.0,
 			},
 			expectedArgs: []string{
-				"144500000", "/tmp/audio_socket", "48000", "NFM", "1",
+				"144500000", "/tmp/audio_socket", "48000", "FM", "1",
 			},
 		},
 		{
@@ -346,7 +346,7 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				SampleRate: intPtr(96000),
 			},
 			expectedArgs: []string{
-				"434000000", "/var/tmp/voice_socket", "96000", "NFM", "1",
+				"434000000", "/var/tmp/voice_socket", "96000", "FM", "1",
 			},
 		},
 		{
@@ -357,7 +357,7 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				SampleRate: intPtr(16000),
 			},
 			expectedArgs: []string{
-				"1296000000", "/tmp/narrowband_socket", "16000", "NFM", "1",
+				"1296000000", "/tmp/narrowband_socket", "16000", "FM", "1",
 			},
 		},
 	}
@@ -370,62 +370,69 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 	}
 }
 
-func TestAudioSockBroadcast_validateCSRDPreset(t *testing.T) {
+func TestAudioSockBroadcast_validateCSDRPreset(t *testing.T) {
 	tests := []struct {
 		name        string
-		csrdPreset  *string
+		csdrPreset  *string
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name:        "nil preset (default)",
-			csrdPreset:  nil,
+			csdrPreset:  nil,
 			expectError: false,
 		},
 		{
 			name:        "valid AM preset",
-			csrdPreset:  stringPtr("AM"),
+			csdrPreset:  stringPtr("AM"),
 			expectError: false,
 		},
 		{
 			name:        "valid DSB preset",
-			csrdPreset:  stringPtr("DSB"),
+			csdrPreset:  stringPtr("DSB"),
 			expectError: false,
 		},
 		{
 			name:        "valid USB preset",
-			csrdPreset:  stringPtr("USB"),
+			csdrPreset:  stringPtr("USB"),
 			expectError: false,
 		},
 		{
 			name:        "valid LSB preset",
-			csrdPreset:  stringPtr("LSB"),
+			csdrPreset:  stringPtr("LSB"),
 			expectError: false,
 		},
 		{
-			name:        "valid NFM preset",
-			csrdPreset:  stringPtr("NFM"),
+			name:        "valid FM preset",
+			csdrPreset:  stringPtr("FM"),
 			expectError: false,
 		},
 		{
-			name:        "valid WFM preset",
-			csrdPreset:  stringPtr("WFM"),
-			expectError: false,
+			name:        "invalid preset - old WFM",
+			csdrPreset:  stringPtr("WFM"),
+			expectError: true,
+			errorMsg:    "invalid CSDR preset",
+		},
+		{
+			name:        "invalid preset - old NFM",
+			csdrPreset:  stringPtr("NFM"),
+			expectError: true,
+			errorMsg:    "invalid CSDR preset",
 		},
 		{
 			name:        "valid RAW preset",
-			csrdPreset:  stringPtr("RAW"),
+			csdrPreset:  stringPtr("RAW"),
 			expectError: false,
 		},
 		{
 			name:        "invalid preset",
-			csrdPreset:  stringPtr("INVALID"),
+			csdrPreset:  stringPtr("INVALID"),
 			expectError: true,
 			errorMsg:    "invalid CSDR preset",
 		},
 		{
 			name:        "case sensitive - lowercase",
-			csrdPreset:  stringPtr("nfm"),
+			csdrPreset:  stringPtr("fm"),
 			expectError: true,
 			errorMsg:    "invalid CSDR preset",
 		},
@@ -433,8 +440,8 @@ func TestAudioSockBroadcast_validateCSRDPreset(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			asb := &AudioSockBroadcast{CSRDPreset: tt.csrdPreset}
-			err := asb.validateCSRDPreset()
+			asb := &AudioSockBroadcast{CSDRPreset: tt.csdrPreset}
+			err := asb.validateCSDRPreset()
 
 			if tt.expectError {
 				require.Error(t, err)

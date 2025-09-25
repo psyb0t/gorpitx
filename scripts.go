@@ -158,7 +158,7 @@ func ensureAudioSockPresets(moduleName ModuleName) error {
 	}
 
 	if _, err := os.Stat(csdrPresetsPath); err != nil {
-		return ensureCSRDPresetsScript(scriptPerm, execPerm)
+		return ensureCSDRPresetsScript(scriptPerm, execPerm)
 	}
 
 	return nil
@@ -247,8 +247,8 @@ func makeExecutable(scriptPath string) error {
 	return nil
 }
 
-// ensureCSRDPresetsScript writes csdr_presets.sh if it doesn't exist.
-func ensureCSRDPresetsScript(scriptPerm, execPerm os.FileMode) error {
+// ensureCSDRPresetsScript writes csdr_presets.sh if it doesn't exist.
+func ensureCSDRPresetsScript(scriptPerm, execPerm os.FileMode) error {
 	// Check if script already exists
 	if _, err := os.Stat(csdrPresetsPath); err == nil {
 		return nil // Script already exists

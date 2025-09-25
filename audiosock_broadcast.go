@@ -14,16 +14,15 @@ const (
 	ModuleNameAudioSockBroadcast ModuleName = "audiosock-broadcast"
 )
 
-type CSRDPresetType = string
+type CSDRPresetType = string
 
 const (
-	CSRDPresetAM  CSRDPresetType = "AM"
-	CSRDPresetDSB CSRDPresetType = "DSB"
-	CSRDPresetUSB CSRDPresetType = "USB"
-	CSRDPresetLSB CSRDPresetType = "LSB"
-	CSRDPresetNFM CSRDPresetType = "NFM"
-	CSRDPresetWFM CSRDPresetType = "WFM"
-	CSRDPresetRAW CSRDPresetType = "RAW"
+	CSDRPresetAM  CSDRPresetType = "AM"
+	CSDRPresetDSB CSDRPresetType = "DSB"
+	CSDRPresetUSB CSDRPresetType = "USB"
+	CSDRPresetLSB CSDRPresetType = "LSB"
+	CSDRPresetFM  CSDRPresetType = "FM"
+	CSDRPresetRAW CSDRPresetType = "RAW"
 )
 
 const (
@@ -42,10 +41,10 @@ type AudioSockBroadcast struct {
 	// Default: 48000 Hz
 	SampleRate *int `json:"sampleRate,omitempty"`
 
-	// CSRDPreset specifies the CSDR processing preset mode. Optional parameter.
-	// If not specified, uses default "NFM".
-	// Available: AM, DSB, USB, LSB, NFM, WFM, RAW
-	CSRDPreset *string `json:"csdrPreset,omitempty"`
+	// CSDRPreset specifies the CSDR processing preset mode. Optional parameter.
+	// If not specified, uses default "FM".
+	// Available: AM, DSB, USB, LSB, FM, RAW
+	CSDRPreset *string `json:"csdrPreset,omitempty"`
 
 	// Gain specifies the gain multiplier for the audio signal. Optional parameter.
 	// Default: 1.0
@@ -87,9 +86,9 @@ func (m *AudioSockBroadcast) buildArgs() []string {
 	args = append(args, strconv.Itoa(sampleRate))
 
 	// Add CSDR preset argument (default if not specified)
-	csdrPreset := CSRDPresetNFM
-	if m.CSRDPreset != nil {
-		csdrPreset = *m.CSRDPreset
+	csdrPreset := CSDRPresetFM
+	if m.CSDRPreset != nil {
+		csdrPreset = *m.CSDRPreset
 	}
 
 	args = append(args, csdrPreset)
@@ -119,7 +118,7 @@ func (m *AudioSockBroadcast) validate() error {
 		return err
 	}
 
-	if err := m.validateCSRDPreset(); err != nil {
+	if err := m.validateCSDRPreset(); err != nil {
 		return err
 	}
 
@@ -175,22 +174,22 @@ func (m *AudioSockBroadcast) validateSampleRate() error {
 	return nil
 }
 
-// validateCSRDPreset validates the CSDR preset parameter.
-func (m *AudioSockBroadcast) validateCSRDPreset() error {
-	if m.CSRDPreset == nil {
+// validateCSDRPreset validates the CSDR preset parameter.
+func (m *AudioSockBroadcast) validateCSDRPreset() error {
+	if m.CSDRPreset == nil {
 		return nil // Optional parameter
 	}
 
-	validPresets := []CSRDPresetType{
-		CSRDPresetAM,
-		CSRDPresetDSB,
-		CSRDPresetUSB,
-		CSRDPresetLSB,
-		CSRDPresetNFM, CSRDPresetWFM,
-		CSRDPresetRAW,
+	validPresets := []CSDRPresetType{
+		CSDRPresetAM,
+		CSDRPresetDSB,
+		CSDRPresetUSB,
+		CSDRPresetLSB,
+		CSDRPresetFM,
+		CSDRPresetRAW,
 	}
 
-	preset := *m.CSRDPreset
+	preset := *m.CSDRPreset
 	if slices.Contains(validPresets, preset) {
 		return nil
 	}

@@ -23,12 +23,9 @@ case "$1" in
         csdr convert_s16_f | csdr gain_ff "$GAIN" | csdr dsb_fc | csdr bandpass_fir_fft_cc -0.06 -0.002 0.01 | csdr agc_ff
         ;;
 
-    # FM modes
-    "NFM")
-        csdr convert_s16_f | csdr agc_ff | csdr gain_ff "$(awk "BEGIN {print $GAIN * 2500}")" | csdr fmmod_fc
-        ;;
-    "WFM")
-        csdr convert_s16_f | csdr agc_ff | csdr gain_ff "$(awk "BEGIN {print $GAIN * 75000}")" | csdr fmmod_fc
+    # FM mode
+    "FM")
+        csdr convert_s16_f | csdr gain_ff "$GAIN" | csdr fmmod_fc
         ;;
 
     # Raw conversion
@@ -44,8 +41,7 @@ case "$1" in
         echo "  DSB                            - Double sideband with AGC (fast, both USB/LSB)"
         echo "  USB                            - Upper sideband with AGC (SLOW on Pi Zero!)"
         echo "  LSB                            - Lower sideband with AGC (SLOW on Pi Zero!)"
-        echo "  NFM                            - Narrow FM (±2.5kHz, amateur/commercial)"
-        echo "  WFM                            - Wideband FM (±75kHz, broadcast FM)"
+        echo "  FM                             - Frequency modulation"
         echo "  RAW                            - Just convert + gain (no AGC)"
         echo ""
         echo "WARNING: USB/LSB presets use heavy bandpass filtering that causes"
