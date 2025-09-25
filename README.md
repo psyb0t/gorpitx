@@ -1,12 +1,12 @@
 # gorpitx
 
-🚀 **Go wrapper that fucking executes rpitx modules without the bullshit.**
+🚀 **Go wrapper that executes rpitx modules without the hassle.**
 
-Tired of wrestling with raw C binaries like a goddamn caveman? This badass Go interface wraps rpitx so you can transmit radio signals without losing your shit. Singleton pattern because we're not animals, and proper process management because segfaults are for scrubs.
+Tired of wrestling with raw C binaries? This Go interface wraps rpitx so you can transmit radio signals cleanly. Singleton pattern because global state should be managed properly, and robust process management because crashes suck.
 
-## 📡 What This Bastard Does
+## 📡 What It Does
 
-Executes rpitx modules through Go without the usual clusterfuck of manual process wrangling. Supports dev mode (fake transmission for testing) and production mode (actual RF carnage).
+Executes rpitx modules through Go without the usual mess of manual process management. Supports dev mode (mock transmission for testing) and production mode (actual RF transmission).
 
 **Modules:**
 
@@ -25,12 +25,12 @@ Executes rpitx modules through Go without the usual clusterfuck of manual proces
 **Architecture Highlights:**
 
 - Singleton pattern with `GetInstance()` because global state done right
-- Module interface for adding more transmission types without breaking shit
-- Process management with timeout and graceful stop (no zombie apocalypse)
-- Dev mode with mock execution (test without frying your neighbors' electronics)
-- Production mode requires root privileges (because RF transmission isn't a joke)
+- Module interface for adding more transmission types without breaking existing code
+- Process management with timeout and graceful stop (no zombie processes)
+- Dev mode with mock execution (test without interfering with real RF)
+- Production mode requires root privileges (RF transmission needs hardware access)
 
-## ⚡ Quick Start (Stop Reading, Start Transmitting)
+## ⚡ Quick Start
 
 ```bash
 go get github.com/psyb0t/gorpitx
@@ -47,45 +47,45 @@ import (
 )
 
 func main() {
-    // Get the singleton instance (there can be only one)
+    // Get the singleton instance
     rpitx := gorpitx.GetInstance()
 
-    // Configure PIFMRDS module (FM with RDS, fancy shit)
+    // Configure PIFMRDS module (FM with RDS)
     args := map[string]interface{}{
-        "freq":  107.9,  // MHz - pick a frequency, any frequency
-        "audio": "/path/to/audio.wav",  // Your audio masterpiece
+        "freq":  107.9,  // MHz frequency
+        "audio": "/path/to/audio.wav",  // Audio file path
         "pi":    "1234",  // Station ID (4 hex digits)
         "ps":    "BADASS",  // Station name (8 chars max)
-        "rt":    "Broadcasting from Go like a boss!",
+        "rt":    "Broadcasting from Go!",
     }
 
     argsJSON, _ := json.Marshal(args)
     ctx := context.Background()
 
-    // Execute with timeout (because infinite loops are evil)
+    // Execute with timeout
     err := rpitx.Exec(ctx, gorpitx.ModuleNamePIFMRDS, argsJSON, 5*time.Minute)
     if err != nil {
-        panic(err)  // Shit hit the fan
+        panic(err)
     }
 }
 ```
 
-## 🔧 Installation Requirements (Don't Skip This Shit)
+## 🔧 Installation Requirements
 
 **Hardware**: Raspberry Pi with GPIO access (Pi Zero, Pi Zero W, Pi A+, Pi B+, Pi 2B, Pi 3B, Pi 3B+)
-**OS**: Raspbian/Raspberry Pi OS (anything else is asking for trouble)
-**Dependencies**: rpitx (install this beast first or nothing works)
-**Privileges**: Must run as root in production (sudo your way to glory)
+**OS**: Raspbian/Raspberry Pi OS (recommended)
+**Dependencies**: rpitx (required - install first)
+**Privileges**: Must run as root in production (for GPIO access)
 
-### Install rpitx (The Foundation of Everything)
+### Install rpitx
 
 ```bash
-# On your Pi, do this shit:
+# On your Pi:
 sudo apt update
 git clone https://github.com/F5OEO/rpitx.git
 cd rpitx
 chmod +x install.sh
-sudo ./install.sh  # This might take a hot minute
+sudo ./install.sh
 ```
 
 ### Install Additional Dependencies
@@ -98,7 +98,7 @@ sudo apt install minimodem sox pulseaudio
 sudo apt install socat
 ```
 
-### Configure Path (Optional But Smart)
+### Configure Path (Optional)
 
 ```bash
 # Set rpitx binary path if you're not using defaults
@@ -1197,9 +1197,9 @@ New modules implement this interface with:
 
 **Note**: pifmrds uses MHz, other planned modules use Hz.
 
-## 📋 TODO: Remaining Modules Implementation (The Fun Stuff)
+## 📋 TODO: Remaining Modules Implementation
 
-Based on the easytest modules from rpitx, here are the **3 badass modules** we still need to implement (excluding that legacy rpitx garbage):
+Based on the easytest modules from rpitx, here are the **3 additional modules** we still need to implement:
 
 - **SENDIQ** - IQ Data Transmission
 
@@ -1255,15 +1255,15 @@ func ValidateEnum(value string, allowedValues []string) error
 func ValidateRange(value, min, max float64) error
 ```
 
-## ⚠️ Legal Notice (Read This or Get Fucked by the FCC)
+## ⚠️ Legal Notice
 
-**RF transmission is regulated as hell.** Don't be a dickhead - get proper licensing before broadcasting. This software is for:
+**RF transmission is regulated.** Get proper licensing before broadcasting. This software is for:
 
-- Licensed amateur radio operators (you know who you are)
-- Low-power experimentation in permitted bands (don't fry your neighbor's radio gear)
-- Educational/research purposes (learn responsibly, you beautiful bastards)
+- Licensed amateur radio operators
+- Low-power experimentation in permitted bands
+- Educational/research purposes
 
-**Absolutely NOT for**: Commercial broadcasting without authorization (the FCC will skull-fuck your wallet).
+**Absolutely NOT for**: Commercial broadcasting without authorization (regulatory fines are severe).
 
 ## 📚 Package Dependencies
 
@@ -1275,8 +1275,8 @@ func ValidateRange(value, min, max float64) error
 
 ## 📄 License
 
-MIT License. Use responsibly and don't be a twat.
+MIT License. Use responsibly.
 
 ---
 
-_Go interface for rpitx that doesn't suck. Built for radio enthusiasts who want clean code without the usual C library nightmare fuel._
+_Go interface for rpitx that works. Built for radio enthusiasts who want clean code without the usual C library complexity._
