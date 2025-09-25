@@ -8,16 +8,38 @@ import (
 	"github.com/psyb0t/ctxerrors"
 )
 
+const (
+	fskScriptPath          = "/tmp/fsk.sh"
+	audioSockBroadcastPath = "/tmp/audiosock_broadcast.sh"
+	csdrPresetsPath        = "/tmp/csdr_presets.sh"
+
+	dirPerm    = 0o750
+	scriptPerm = 0o600
+	execPerm   = 0o700
+)
+
 // fskScript contains the embedded FSK script content
 //
 //go:embed scripts/fsk.sh
 var fskScript string
 
+// audioSockBroadcastScript contains the embedded AudioSock script
+//
+//go:embed scripts/audiosock_broadcast.sh
+var audioSockBroadcastScript string
+
+// csdrPresetsScript contains the embedded CSDR presets script
+//
+//go:embed scripts/csdr_presets.sh
+var csdrPresetsScript string
+
 // ModuleNameToScriptName returns the script path for script-based modules.
 func ModuleNameToScriptName(moduleName ModuleName) (string, bool) {
 	switch moduleName {
 	case ModuleNameFSK:
-		return "/tmp/fsk.sh", true
+		return fskScriptPath, true
+	case ModuleNameAudioSockBroadcast:
+		return audioSockBroadcastPath, true
 	default:
 		return "", false
 	}
@@ -31,16 +53,15 @@ func EnsureScriptExists(moduleName ModuleName) error {
 		return nil // Not a script-based module
 	}
 
-	// Check if script already exists
-	if _, err := os.Stat(scriptPath); err == nil {
-		return nil // Script already exists
-	}
+	// Always overwrite script (no existence check)
 
 	var scriptContent string
 
 	switch moduleName {
 	case ModuleNameFSK:
 		scriptContent = fskScript
+	case ModuleNameAudioSockBroadcast:
+		scriptContent = audioSockBroadcastScript
 	default:
 		return ctxerrors.Wrapf(
 			ErrUnknownModule,
@@ -48,12 +69,6 @@ func EnsureScriptExists(moduleName ModuleName) error {
 			moduleName,
 		)
 	}
-
-	const (
-		dirPerm    = 0o750
-		scriptPerm = 0o600
-		execPerm   = 0o700
-	)
 
 	// Create directory if needed
 	if err := os.MkdirAll(filepath.Dir(scriptPath), dirPerm); err != nil {
@@ -77,6 +92,34 @@ func EnsureScriptExists(moduleName ModuleName) error {
 			err,
 			"failed to make script executable: %s",
 			scriptPath,
+		)
+	}
+
+	// Also write csdr_presets.sh for audiosock module
+	if moduleName == ModuleNameAudioSockBroadcast {
+		if err := ensureCSRDPresetsScript(scriptPerm, execPerm); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ensureCSRDPresetsScript writes the csdr_presets.sh script to filesystem.
+func ensureCSRDPresetsScript(scriptPerm, execPerm os.FileMode) error {
+	if err := os.WriteFile(
+		csdrPresetsPath, []byte(csdrPresetsScript), scriptPerm,
+	); err != nil {
+		return ctxerrors.Wrapf(err,
+			"failed to write csdr_presets.sh: %s", csdrPresetsPath)
+	}
+
+	// Make csdr_presets.sh executable
+	if err := os.Chmod(csdrPresetsPath, execPerm); err != nil {
+		return ctxerrors.Wrapf(
+			err,
+			"failed to make csdr_presets.sh executable: %s",
+			csdrPresetsPath,
 		)
 	}
 

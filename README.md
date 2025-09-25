@@ -20,6 +20,7 @@ Executes rpitx modules through Go without the usual clusterfuck of manual proces
 - **pisstv**: Slow Scan Television (SSTV) transmission (frequency in Hz)
 - **pirtty**: RTTY (Radio Teletype) transmission (frequency in Hz)
 - **fsk**: FSK text transmission via minimodem/sox (frequency in Hz)
+- **audiosock-broadcast**: Audio streaming from unix socket with CSDR preset-based processing (frequency in Hz)
 
 **Architecture Highlights:**
 
@@ -93,8 +94,11 @@ sudo ./install.sh  # This might take a hot minute
 # For FSK module (FSK transmission)
 sudo apt install minimodem sox pulseaudio
 
+# For USB AudioSock Broadcast module (unix socket audio streaming)
+sudo apt install socat
+
 # For other modules (if you want them all)
-# Most modules only need rpitx, but FSK needs these extras
+# Most modules only need rpitx, but FSK and USB AudioSock need these extras
 ```
 
 ### Configure Path (Optional But Smart)
@@ -768,10 +772,6 @@ FSK implements FSK (Frequency Shift Keying) text transmission using the minimode
 - **Input Methods**: Direct text or file content
 - **Pipeline**: Text → minimodem → sox → rpitx sendiq
 
-**Dependencies:**
-
-FSK requires minimodem and sox (install via the Installation Requirements section above).
-
 **Baud Rate Selection:**
 
 The default 50 baud rate was chosen based on testing for optimal clarity:
@@ -857,7 +857,6 @@ text_input | minimodem --tx <baud_rate> -f temp.wav
 sox temp.wav -t raw -e signed -b 16 -r 48000 -c 2 - | sendiq -i /dev/stdin -s 48000 -f <frequency> -t i16
 ```
 
-
 **Technical Notes:**
 
 - Script-based module with embedded bash script
@@ -866,6 +865,199 @@ sox temp.wav -t raw -e signed -b 16 -r 48000 -c 2 - | sendiq -i /dev/stdin -s 48
 - Uses stdbuf for unbuffered output streaming
 - Environment variable RPITX_PATH passed to script
 - Temporary files use process ID for uniqueness
+
+## 📻 AudioSock Broadcast Module Configuration
+
+```go
+type AudioSockBroadcast struct {
+    SocketPath  string   `json:"socketPath"`              // Required, unix socket path for audio input
+    Frequency   float64  `json:"frequency"`               // Hz, required, carrier frequency
+    SampleRate  *int     `json:"sampleRate,omitempty"`    // Hz, optional, audio sample rate (default: 48000)
+    CSRPreset   *string  `json:"csdrPreset,omitempty"`    // Optional, CSDR processing preset (default: "NFM")
+    Gain        *float64 `json:"gain,omitempty"`          // Optional, signal gain multiplier (default: 1.0)
+}
+```
+
+**Validation Rules:**
+
+- `SocketPath`: Required, unix socket path for audio data input
+- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `SampleRate`: Optional, positive integer in Hz (default: 48000)
+- `CSRPreset`: Optional, must be valid preset (default: "NFM"). Available: AM, DSB, USB, LSB, NFM, WFM, RAW
+- `Gain`: Optional, non-negative float (default: 1.0)
+
+**AudioSock Broadcast Implementation Details:**
+
+AudioSock Broadcast streams audio data from a unix socket and transmits it using preset-based CSDR processing via rpitx. The module reads raw PCM audio data from the socket and processes it through predefined modulation presets. The default preset provides narrow FM transmission (NFM), but users can specify any available modulation type including AM, USB/LSB SSB, wideband FM (WFM), or raw audio processing.
+
+**Audio Data Format:**
+
+The unix socket must provide raw PCM audio data in the following format:
+
+- **Format**: Raw PCM audio (no headers)
+- **Sample format**: Signed 16-bit integers (S16LE)
+- **Channels**: Mono (single channel)
+- **Sample rate**: Configurable (default 48kHz)
+- **Byte order**: Little-endian
+
+**Audio Sources:**
+
+The unix socket can receive audio from various sources:
+
+- **Live microphone**: Browser WebRTC, WebSocket streams, PulseAudio
+- **Audio files**: MP3/WAV decoded to raw PCM format
+- **Streaming audio**: Internet radio, VoIP, real-time audio processing
+- **Generated audio**: Synthesized tones, DTMF, digital modes
+
+**CSDR Preset System:**
+
+The module uses predefined CSDR processing presets for different modulation types:
+
+```bash
+unix_socket → csdr_presets.sh [PRESET] [GAIN] → sendiq
+```
+
+**Available Presets:**
+
+- **AM**: Amplitude modulation with AGC
+- **DSB**: Double Side Band with AGC - transmits on both USB and LSB (fast)
+- **USB**: Upper Side Band with AGC and bandpass filtering ⚠️ **SLOW on Pi Zero**
+- **LSB**: Lower Side Band with AGC and bandpass filtering ⚠️ **SLOW on Pi Zero**
+- **NFM**: Narrow FM (±2.5kHz deviation) for amateur radio, commercial 2-way
+- **WFM**: Wideband FM (±75kHz deviation) for broadcast FM radio
+- **RAW**: Minimal processing (convert + gain only, no AGC)
+
+⚠️ **Performance Warning**: USB/LSB presets use heavy `csdr bandpass_fir_fft_cc` filtering that causes latency, weird modulation artifacts, and audio dropouts on Pi Zero. Use DSB presets for better performance - they transmit on both sidebands so you can tune either USB or LSB on your receiver.
+
+**Default NFM Processing Pipeline:**
+
+1. **csdr convert_s16_f**: Converts signed 16-bit integers to floating point
+2. **csdr agc_ff**: Automatic gain control to prevent overdeviation
+3. **csdr gain_ff**: Applies user-specified gain multiplier (scaled for FM deviation)
+4. **csdr fmmod_fc**: FM modulation with narrow deviation (2500 Hz * gain)
+5. **sendiq**: Transmits IQ data via rpitx with no fade-in delay
+
+**Example Usage:**
+
+```go
+import (
+    "context"
+    "encoding/json"
+    "github.com/psyb0t/gorpitx"
+)
+
+// Basic AudioSock broadcast (uses default NFM preset)
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",     // Unix socket path
+    Frequency:  144500000.0,             // 144.5 MHz (2m amateur band)
+    SampleRate: intPtr(48000),           // 48kHz sample rate
+}
+
+argsJSON, _ := json.Marshal(args)
+ctx := context.Background()
+
+// Execute AudioSock broadcast (runs until stopped)
+err := rpitx.Exec(ctx, gorpitx.ModuleNameAudioSockBroadcast, argsJSON, 0) // No timeout
+if err != nil {
+    panic(err)
+}
+
+func intPtr(i int) *int { return &i }
+func stringPtr(s string) *string { return &s }
+func floatPtr(f float64) *float64 { return &f }
+```
+
+**Different Modulation Examples:**
+
+```go
+// USB SSB voice transmission (traditional HF voice)
+// WARNING: Slow on Pi Zero! Use DSB for better performance.
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",
+    Frequency:  14200000.0,              // 14.200 MHz (20m USB voice)
+    CSRPreset:  stringPtr("USB"),        // USB with AGC - SLOW on Pi Zero
+    Gain:       floatPtr(2.0),           // Increase gain for voice
+}
+
+// DSB alternative - much faster, works on both USB/LSB tuning
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",
+    Frequency:  14200000.0,              // 14.200 MHz (tune USB or LSB)
+    CSRPreset:  stringPtr("DSB"),        // Double sideband with AGC - FAST
+    Gain:       floatPtr(2.0),           // Increase gain for voice
+}
+
+// Wideband FM for high-fidelity audio
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",
+    Frequency:  144500000.0,
+    CSRPreset:  stringPtr("WFM"),        // Wide FM (±75kHz deviation)
+    Gain:       floatPtr(0.8),           // Reduce gain to prevent overdeviation
+}
+
+// AM broadcast simulation
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",
+    Frequency:  1620000.0,               // 1620 kHz (AM broadcast)
+    CSRPreset:  stringPtr("AM"),         // AM with AGC
+    Gain:       floatPtr(1.5),           // Moderate gain
+}
+
+// Raw audio processing for custom applications
+args := gorpitx.AudioSockBroadcast{
+    SocketPath: "/tmp/audio_socket",
+    Frequency:  432100000.0,
+    CSRPreset:  stringPtr("RAW"),        // Minimal processing
+    Gain:       floatPtr(3.0),           // Custom gain level
+}
+```
+
+**Setting Up Audio Socket:**
+
+The unix socket must be created and populated with audio data before starting transmission:
+
+```bash
+# Create named pipe for audio data
+mkfifo /tmp/audio_socket
+
+# Example: Stream microphone via FFmpeg
+ffmpeg -f pulse -i default -ar 48000 -ac 1 -f s16le unix:/tmp/audio_socket
+
+# Example: Convert MP3 to socket
+ffmpeg -i music.mp3 -ar 48000 -ac 1 -f s16le unix:/tmp/audio_socket
+
+# Example: Browser microphone via WebSocket → unix socket
+node websocket_audio_server.js > /tmp/audio_socket
+```
+
+**Common Amateur Radio Frequencies:**
+
+Amateur radio frequencies suitable for voice transmission:
+
+- **2m band**: 144.200-144.275 MHz (USB voice)
+- **70cm band**: 432.100-432.400 MHz (USB voice)
+- **20m band**: 14.200-14.350 MHz (USB voice)
+- **40m band**: 7.200-7.300 MHz (USB voice)
+- **80m band**: 3.700-4.000 MHz (USB voice)
+
+**Performance Characteristics:**
+
+- **Latency**: ~100ms end-to-end (socket → RF transmission)
+- **Audio Quality**: Full fidelity limited by sample rate and RF conditions
+- **CPU Usage**: Moderate (~10-15% on Raspberry Pi 4, varies by preset)
+- **Buffer Management**: Automatic via csdr pipeline
+- **Default Transmission Type**: Narrow FM (NFM) - ±2.5kHz deviation, ideal for voice/data
+
+**Technical Notes:**
+
+- Script-based module with embedded bash script and csdr_presets.sh
+- Uses socat for unix socket reading
+- No fade-in delay (unlike pifmrds) - immediate transmission
+- Preset-based processing ensures consistent, tested configurations
+- Compatible with any audio source that can write S16LE PCM to unix socket
+- Requires rpitx sendiq binary for IQ transmission
+- Supports all common modulation types via CSDR presets (AM, FM, SSB, raw)
+- Default narrow FM ideal for VHF/UHF amateur radio communications
 
 ## 🎛️ Process Control
 
