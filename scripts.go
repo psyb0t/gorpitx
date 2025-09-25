@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/psyb0t/ctxerrors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -33,6 +34,90 @@ var audioSockBroadcastScript string
 //go:embed scripts/csdr_presets.sh
 var csdrPresetsScript string
 
+// init writes all embedded scripts to filesystem on package initialization.
+//
+//nolint:gochecknoinits // Required for automatic script deployment
+func init() {
+	writeAllScripts()
+}
+
+// writeAllScripts writes all embedded scripts to filesystem unconditionally.
+//
+//nolint:funlen // Function length due to proper parameter formatting
+func writeAllScripts() {
+	var err error
+
+	// Create directories
+	err = os.MkdirAll(
+		filepath.Dir(fskScriptPath),
+		dirPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to create script directory: %v", err)
+	}
+
+	err = os.MkdirAll(
+		filepath.Dir(audioSockBroadcastPath),
+		dirPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to create script directory: %v", err)
+	}
+
+	err = os.MkdirAll(
+		filepath.Dir(csdrPresetsPath),
+		dirPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to create script directory: %v", err)
+	}
+
+	// Write FSK script
+	err = os.WriteFile(
+		fskScriptPath,
+		[]byte(fskScript),
+		scriptPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to write FSK script: %v", err)
+	}
+
+	err = os.Chmod(fskScriptPath, execPerm)
+	if err != nil {
+		logrus.Fatalf("failed to make FSK script executable: %v", err)
+	}
+
+	// Write AudioSock script
+	err = os.WriteFile(
+		audioSockBroadcastPath,
+		[]byte(audioSockBroadcastScript),
+		scriptPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to write AudioSock script: %v", err)
+	}
+
+	err = os.Chmod(audioSockBroadcastPath, execPerm)
+	if err != nil {
+		logrus.Fatalf("failed to make AudioSock script executable: %v", err)
+	}
+
+	// Write CSDR presets script
+	err = os.WriteFile(
+		csdrPresetsPath,
+		[]byte(csdrPresetsScript),
+		scriptPerm,
+	)
+	if err != nil {
+		logrus.Fatalf("failed to write CSDR presets script: %v", err)
+	}
+
+	err = os.Chmod(csdrPresetsPath, execPerm)
+	if err != nil {
+		logrus.Fatalf("failed to make CSDR presets script executable: %v", err)
+	}
+}
+
 // ModuleNameToScriptName returns the script path for script-based modules.
 func ModuleNameToScriptName(moduleName ModuleName) (string, bool) {
 	switch moduleName {
@@ -45,33 +130,85 @@ func ModuleNameToScriptName(moduleName ModuleName) (string, bool) {
 	}
 }
 
-// EnsureScriptExists writes the embedded script to filesystem if it doesn't
-// exist.
+// EnsureScriptExists writes the embedded script if it doesn't exist.
 func EnsureScriptExists(moduleName ModuleName) error {
 	scriptPath, isScript := ModuleNameToScriptName(moduleName)
 	if !isScript {
-		return nil // Not a script-based module
+		return nil
 	}
 
-	// Always overwrite script (no existence check)
+	if scriptExists(scriptPath) {
+		return ensureAudioSockPresets(moduleName)
+	}
 
-	var scriptContent string
+	return writeScript(moduleName, scriptPath)
+}
 
+// scriptExists checks if a script file exists.
+func scriptExists(scriptPath string) bool {
+	_, err := os.Stat(scriptPath)
+
+	return err == nil
+}
+
+// ensureAudioSockPresets ensures CSDR presets exist for AudioSock module.
+func ensureAudioSockPresets(moduleName ModuleName) error {
+	if moduleName != ModuleNameAudioSockBroadcast {
+		return nil
+	}
+
+	if _, err := os.Stat(csdrPresetsPath); err != nil {
+		return ensureCSRDPresetsScript(scriptPerm, execPerm)
+	}
+
+	return nil
+}
+
+// writeScript writes a script to the filesystem.
+func writeScript(moduleName ModuleName, scriptPath string) error {
+	scriptContent, err := getScriptContent(moduleName)
+	if err != nil {
+		return err
+	}
+
+	if err := createScriptDir(scriptPath); err != nil {
+		return err
+	}
+
+	if err := writeScriptFile(scriptPath, scriptContent); err != nil {
+		return err
+	}
+
+	if err := makeExecutable(scriptPath); err != nil {
+		return err
+	}
+
+	return ensureAudioSockPresets(moduleName)
+}
+
+// getScriptContent returns the embedded script content for a module.
+func getScriptContent(moduleName ModuleName) (string, error) {
 	switch moduleName {
 	case ModuleNameFSK:
-		scriptContent = fskScript
+		return fskScript, nil
 	case ModuleNameAudioSockBroadcast:
-		scriptContent = audioSockBroadcastScript
+		return audioSockBroadcastScript, nil
 	default:
-		return ctxerrors.Wrapf(
+		return "", ctxerrors.Wrapf(
 			ErrUnknownModule,
 			"no script content for module: %s",
 			moduleName,
 		)
 	}
+}
 
-	// Create directory if needed
-	if err := os.MkdirAll(filepath.Dir(scriptPath), dirPerm); err != nil {
+// createScriptDir creates the script directory if it doesn't exist.
+func createScriptDir(scriptPath string) error {
+	err := os.MkdirAll(
+		filepath.Dir(scriptPath),
+		dirPerm,
+	)
+	if err != nil {
 		return ctxerrors.Wrapf(
 			err,
 			"failed to create script directory: %s",
@@ -79,15 +216,27 @@ func EnsureScriptExists(moduleName ModuleName) error {
 		)
 	}
 
-	// Write script to filesystem
-	if err := os.WriteFile(
-		scriptPath, []byte(scriptContent), scriptPerm,
-	); err != nil {
+	return nil
+}
+
+// writeScriptFile writes the script content to a file.
+func writeScriptFile(scriptPath, content string) error {
+	err := os.WriteFile(
+		scriptPath,
+		[]byte(content),
+		scriptPerm,
+	)
+	if err != nil {
 		return ctxerrors.Wrapf(err, "failed to write script: %s", scriptPath)
 	}
 
-	// Make script executable
-	if err := os.Chmod(scriptPath, execPerm); err != nil {
+	return nil
+}
+
+// makeExecutable makes a script file executable.
+func makeExecutable(scriptPath string) error {
+	err := os.Chmod(scriptPath, execPerm)
+	if err != nil {
 		return ctxerrors.Wrapf(
 			err,
 			"failed to make script executable: %s",
@@ -95,20 +244,20 @@ func EnsureScriptExists(moduleName ModuleName) error {
 		)
 	}
 
-	// Also write csdr_presets.sh for audiosock module
-	if moduleName == ModuleNameAudioSockBroadcast {
-		if err := ensureCSRDPresetsScript(scriptPerm, execPerm); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-// ensureCSRDPresetsScript writes the csdr_presets.sh script to filesystem.
+// ensureCSRDPresetsScript writes csdr_presets.sh if it doesn't exist.
 func ensureCSRDPresetsScript(scriptPerm, execPerm os.FileMode) error {
+	// Check if script already exists
+	if _, err := os.Stat(csdrPresetsPath); err == nil {
+		return nil // Script already exists
+	}
+
 	if err := os.WriteFile(
-		csdrPresetsPath, []byte(csdrPresetsScript), scriptPerm,
+		csdrPresetsPath,
+		[]byte(csdrPresetsScript),
+		scriptPerm,
 	); err != nil {
 		return ctxerrors.Wrapf(err,
 			"failed to write csdr_presets.sh: %s", csdrPresetsPath)

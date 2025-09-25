@@ -20,7 +20,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
 			},
-			expectedArgs: []string{"144500000", "/tmp/audio_socket", "48000", "NFM", "1"},
+			expectedArgs: []string{
+				"144500000", "/tmp/audio_socket", "48000", "NFM", "1",
+			},
 		},
 		{
 			name: "custom sample rate",
@@ -29,7 +31,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Frequency:  434000000.0,
 				SampleRate: intPtr(96000),
 			},
-			expectedArgs: []string{"434000000", "/tmp/custom_socket", "96000", "NFM", "1"},
+			expectedArgs: []string{
+				"434000000", "/tmp/custom_socket", "96000", "NFM", "1",
+			},
 		},
 		{
 			name: "high frequency configuration",
@@ -38,7 +42,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Frequency:  1296000000.0,
 				SampleRate: intPtr(22050),
 			},
-			expectedArgs: []string{"1296000000", "/var/tmp/voice_socket", "22050", "NFM", "1"},
+			expectedArgs: []string{
+				"1296000000", "/var/tmp/voice_socket", "22050", "NFM", "1",
+			},
 		},
 		{
 			name: "custom CSDR preset",
@@ -47,7 +53,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Frequency:  144500000.0,
 				CSRPreset:  stringPtr("WFM"),
 			},
-			expectedArgs: []string{"144500000", "/tmp/audio_socket", "48000", "WFM", "1"},
+			expectedArgs: []string{
+				"144500000", "/tmp/audio_socket", "48000", "WFM", "1",
+			},
 		},
 		{
 			name: "custom gain",
@@ -56,7 +64,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				Frequency:  144500000.0,
 				Gain:       floatPtr(2.5),
 			},
-			expectedArgs: []string{"144500000", "/tmp/audio_socket", "48000", "NFM", "2.5"},
+			expectedArgs: []string{
+				"144500000", "/tmp/audio_socket", "48000", "NFM", "2.5",
+			},
 		},
 		{
 			name: "all custom parameters",
@@ -67,7 +77,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 				CSRPreset:  stringPtr("USB"),
 				Gain:       floatPtr(3.0),
 			},
-			expectedArgs: []string{"434000000", "/tmp/custom_socket", "96000", "USB", "3"},
+			expectedArgs: []string{
+				"434000000", "/tmp/custom_socket", "96000", "USB", "3",
+			},
 		},
 	}
 
@@ -322,7 +334,9 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
 			},
-			expectedArgs: []string{"144500000", "/tmp/audio_socket", "48000", "NFM", "1"},
+			expectedArgs: []string{
+				"144500000", "/tmp/audio_socket", "48000", "NFM", "1",
+			},
 		},
 		{
 			name: "custom sample rate",
@@ -331,7 +345,9 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				Frequency:  434000000.0,
 				SampleRate: intPtr(96000),
 			},
-			expectedArgs: []string{"434000000", "/var/tmp/voice_socket", "96000", "NFM", "1"},
+			expectedArgs: []string{
+				"434000000", "/var/tmp/voice_socket", "96000", "NFM", "1",
+			},
 		},
 		{
 			name: "high frequency with low sample rate",
@@ -340,7 +356,9 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 				Frequency:  1296000000.0,
 				SampleRate: intPtr(16000),
 			},
-			expectedArgs: []string{"1296000000", "/tmp/narrowband_socket", "16000", "NFM", "1"},
+			expectedArgs: []string{
+				"1296000000", "/tmp/narrowband_socket", "16000", "NFM", "1",
+			},
 		},
 	}
 

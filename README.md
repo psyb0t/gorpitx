@@ -94,11 +94,8 @@ sudo ./install.sh  # This might take a hot minute
 # For FSK module (FSK transmission)
 sudo apt install minimodem sox pulseaudio
 
-# For USB AudioSock Broadcast module (unix socket audio streaming)
+# For AudioSock Broadcast module (unix socket audio streaming)
 sudo apt install socat
-
-# For other modules (if you want them all)
-# Most modules only need rpitx, but FSK and USB AudioSock need these extras
 ```
 
 ### Configure Path (Optional But Smart)
