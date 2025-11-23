@@ -159,9 +159,11 @@ func TestPIFMRDS_validateFreq(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -188,9 +190,11 @@ func TestPIFMRDS_validatePI(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -215,9 +219,11 @@ func TestPIFMRDS_validatePS(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

@@ -243,9 +243,11 @@ func TestAudioSockBroadcast_validateSocketPath(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -315,9 +317,11 @@ func TestAudioSockBroadcast_validateSampleRate(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -446,9 +450,11 @@ func TestAudioSockBroadcast_validateModulation(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -507,9 +513,11 @@ func TestAudioSockBroadcast_validateGain(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }

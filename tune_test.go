@@ -249,9 +249,11 @@ func TestTUNE_ValidateFreq(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -303,9 +305,11 @@ func TestTUNE_ValidatePPM(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -364,9 +368,11 @@ func TestTUNE_Validate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

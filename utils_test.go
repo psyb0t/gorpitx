@@ -284,9 +284,11 @@ func RunFrequencyValidationTest(
 		if tt.errorMsg != "" {
 			assert.Contains(t, err.Error(), tt.errorMsg)
 		}
-	} else {
-		require.NoError(t, err)
+
+		return
 	}
+
+	require.NoError(t, err)
 }
 
 type BuildArgsTest struct {
@@ -347,7 +349,9 @@ func RunPositiveValidationTest(
 		if tt.errorType != nil {
 			assert.ErrorIs(t, err, tt.errorType)
 		}
-	} else {
-		require.NoError(t, err)
+
+		return
 	}
+
+	require.NoError(t, err)
 }

@@ -146,7 +146,7 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	modules := rpitx.GetSupportedModules()
 
 	// Should return all registered modules
-	assert.Len(t, modules, 11)
+	assert.Len(t, modules, 12)
 	assert.Contains(t, modules, ModuleNamePIFMRDS)
 	assert.Contains(t, modules, ModuleNameTUNE)
 	assert.Contains(t, modules, ModuleNameMORSE)
@@ -158,10 +158,11 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	assert.Contains(t, modules, ModuleNamePIRTTY)
 	assert.Contains(t, modules, ModuleNameFSK)
 	assert.Contains(t, modules, ModuleNameAudioSockBroadcast)
+	assert.Contains(t, modules, ModuleNameSENDIQ)
 
 	// Should return a new slice each time (checking length consistency)
 	modules2 := rpitx.GetSupportedModules()
-	assert.Len(t, modules2, 11)
+	assert.Len(t, modules2, 12)
 	assert.Contains(t, modules2, ModuleNamePIFMRDS)
 	assert.Contains(t, modules2, ModuleNameTUNE)
 	assert.Contains(t, modules2, ModuleNameMORSE)
@@ -173,6 +174,7 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 	assert.Contains(t, modules2, ModuleNamePIRTTY)
 	assert.Contains(t, modules2, ModuleNameFSK)
 	assert.Contains(t, modules2, ModuleNameAudioSockBroadcast)
+	assert.Contains(t, modules2, ModuleNameSENDIQ)
 }
 
 func TestRPITX_IsSupportedModule(t *testing.T) {
@@ -664,9 +666,11 @@ func TestPIFMRDS_ControlPipeValidation(t *testing.T) {
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }

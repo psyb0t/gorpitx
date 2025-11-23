@@ -275,9 +275,11 @@ func TestSPECTRUMPAINT_ValidatePictureFile(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -346,9 +348,11 @@ func TestSPECTRUMPAINT_ValidateFrequency(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -395,9 +399,11 @@ func TestSPECTRUMPAINT_ValidateExcursion(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -474,9 +480,11 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

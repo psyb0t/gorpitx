@@ -278,9 +278,11 @@ func TestMORSE_ValidateRate(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -349,9 +351,11 @@ func TestMORSE_ValidateMessage(t *testing.T) {
 				if tt.errorType != nil {
 					assert.ErrorIs(t, err, tt.errorType)
 				}
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -415,9 +419,11 @@ func TestMORSE_Validate(t *testing.T) {
 
 			if tt.expectError {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

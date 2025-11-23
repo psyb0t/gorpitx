@@ -63,9 +63,11 @@ func TestEnsureAudioSockModulation(t *testing.T) {
 			err := ensureAudioSockModulation(tt.moduleName)
 			if tt.expectErr {
 				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
+
+				return
 			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
@@ -99,10 +101,12 @@ func TestGetScriptContent(t *testing.T) {
 			if tt.expectErr {
 				assert.Error(t, err)
 				assert.Empty(t, content)
-			} else {
-				assert.NoError(t, err)
-				assert.NotEmpty(t, content)
+
+				return
 			}
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, content)
 		})
 	}
 }

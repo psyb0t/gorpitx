@@ -287,9 +287,11 @@ func TestFSK_validateInputType(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -338,9 +340,11 @@ func TestFSK_validateBaudRate(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -464,19 +468,21 @@ func TestFSK_prepareStdin(t *testing.T) {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
 				assert.Nil(t, stdin)
+
+				return
+			}
+
+			require.NoError(t, err)
+			assert.NotNil(t, stdin)
+
+			// Test reading from stdin
+			data, err := io.ReadAll(stdin)
+			require.NoError(t, err)
+
+			if tt.fsk.InputType == InputTypeText {
+				assert.Equal(t, tt.fsk.Text+"\n", string(data))
 			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, stdin)
-
-				// Test reading from stdin
-				data, err := io.ReadAll(stdin)
-				require.NoError(t, err)
-
-				if tt.fsk.InputType == InputTypeText {
-					assert.Equal(t, tt.fsk.Text+"\n", string(data))
-				} else {
-					assert.Equal(t, testContent+"\n", string(data))
-				}
+				assert.Equal(t, testContent+"\n", string(data))
 			}
 		})
 	}

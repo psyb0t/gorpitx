@@ -232,9 +232,11 @@ func TestPIRTTY_validateSpaceFrequency(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -285,9 +287,11 @@ func TestPIRTTY_validateMessage(t *testing.T) {
 			if tt.expectError {
 				require.Error(t, err)
 				assert.ErrorIs(t, err, commonerrors.ErrRequiredFieldNotSet)
-			} else {
-				require.NoError(t, err)
+
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }
