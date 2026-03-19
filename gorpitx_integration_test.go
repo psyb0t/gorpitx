@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/psyb0t/commander"
-	"github.com/psyb0t/common-go/env"
 	commonerrors "github.com/psyb0t/common-go/errors"
+	"github.com/psyb0t/goenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Test streaming by starting a real commander process
 	realCommander := commander.New()
@@ -80,7 +80,7 @@ func TestRPITX_StartInGoroutineAndStop_Integration(t *testing.T) {
 }
 
 func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Test multiple streams with real commander
 	realCommander := commander.New()
@@ -142,7 +142,7 @@ func TestRPITX_ConcurrentExecution_Integration(t *testing.T) {
 }
 
 func TestRPITX_Stop_Integration(t *testing.T) {
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Use real commander to actually execute shell commands
 	realCommander := commander.New()
@@ -207,7 +207,7 @@ func TestRPITX_Stop_Integration(t *testing.T) {
 
 func TestRPITX_DevExecution_Integration(t *testing.T) {
 	// Test dev environment execution
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	realCommander := commander.New()
 	rpitx := &RPITX{
@@ -245,7 +245,7 @@ func TestRPITX_DevExecution_Integration(t *testing.T) {
 
 func TestRPITX_DevExecution_InvalidModule_Integration(t *testing.T) {
 	// Test unknown module with real commander (should fail before execution)
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	realCommander := commander.New()
 	rpitx := &RPITX{
@@ -268,7 +268,7 @@ func TestRPITX_DevExecution_InvalidModule_Integration(t *testing.T) {
 
 func TestRPITX_DevExecution_InvalidArgs_Integration(t *testing.T) {
 	// Test invalid JSON with real commander
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	realCommander := commander.New()
 	rpitx := &RPITX{
@@ -293,7 +293,7 @@ func TestRPITX_DevExecution_InvalidArgs_Integration(t *testing.T) {
 
 func TestRPITX_DevExecution_ParseArgsFailure_Integration(t *testing.T) {
 	// Test module ParseArgs failure with real commander
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	realCommander := commander.New()
 	rpitx := &RPITX{
@@ -319,7 +319,7 @@ func TestRPITX_DevExecution_ParseArgsFailure_Integration(t *testing.T) {
 func TestRPITX_ProductionExecution_WaitFailure_Integration(t *testing.T) {
 	// Test production execution wait failure using real commander with
 	// non-existent command
-	t.Setenv(env.EnvVarName, env.EnvTypeProd)
+	t.Setenv(goenv.EnvVarName, goenv.Prod)
 
 	// Use real commander to test actual wait failure
 	realCommander := commander.New()
@@ -353,7 +353,7 @@ func TestRPITX_ProductionExecution_WaitFailure_Integration(t *testing.T) {
 
 func TestRPITX_ConcurrentStopCalls_Integration(t *testing.T) {
 	// Test multiple stop calls don't cause issues
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	rpitx := createTestRPITXInstance()
 	ctx := context.Background()
@@ -464,7 +464,7 @@ func analyzeStopResults(
 
 func TestRPITX_StreamOutputs_WithRealExecution_Integration(t *testing.T) {
 	// Use dev environment so RPITX will run the actual mock shell command
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	ctx := context.Background()
 	rpitx := setupRealExecutionTest()

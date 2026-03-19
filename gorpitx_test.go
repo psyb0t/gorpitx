@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/psyb0t/commander"
-	"github.com/psyb0t/common-go/env"
+	"github.com/psyb0t/goenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +81,7 @@ func TestRPITX_Exec(t *testing.T) {
 
 func TestRPITX_Exec_DevEnvironment(t *testing.T) {
 	// Set ENV=dev to trigger dev mode
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Test dev environment specifically
 	mockCommander := commander.NewMock()
@@ -115,7 +115,7 @@ func TestRPITX_Exec_DevEnvironment(t *testing.T) {
 
 func TestRPITX_GetInstance(t *testing.T) {
 	// Set ENV=dev to avoid root check in tests
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -136,7 +136,7 @@ func TestRPITX_GetInstance(t *testing.T) {
 
 func TestRPITX_GetSupportedModules(t *testing.T) {
 	// Set ENV=dev to avoid root check in tests
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -179,7 +179,7 @@ func TestRPITX_GetSupportedModules(t *testing.T) {
 
 func TestRPITX_IsSupportedModule(t *testing.T) {
 	// Set ENV=dev to avoid root check in tests
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -200,7 +200,7 @@ func TestRPITX_IsSupportedModule(t *testing.T) {
 
 func TestRPITX_StreamOutputs_DuringExecution(t *testing.T) {
 	// Test StreamOutputs timing during actual execution
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -296,7 +296,7 @@ checkResults:
 
 func TestRPITX_StreamOutputsAsync(t *testing.T) {
 	// Test StreamOutputsAsync for easier usage
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -367,7 +367,7 @@ checkResults:
 
 func TestRPITX_getMockExecCmd(t *testing.T) {
 	// Set ENV=dev to test mock execution
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	rpitx := &RPITX{}
 
@@ -507,7 +507,7 @@ func TestRPITX_Exec_TuneModule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set ENV=dev to test mock execution
-			t.Setenv(env.EnvVarName, env.EnvTypeDev)
+			t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 			// Create RPITX instance with mock commander
 			mockCommander := commander.NewMock()
@@ -550,7 +550,7 @@ func TestRPITX_Exec_TuneModule(t *testing.T) {
 
 func TestRPITX_ProductionExecution_Success(t *testing.T) {
 	// Test actual production execution path with mock commander
-	t.Setenv(env.EnvVarName, env.EnvTypeProd)
+	t.Setenv(goenv.EnvVarName, goenv.Prod)
 
 	mockCommander := commander.NewMock()
 	rpitx := &RPITX{
@@ -594,7 +594,7 @@ func TestRPITX_ProductionExecution_Success(t *testing.T) {
 
 func TestRPITX_ProductionExecution_StartFailure(t *testing.T) {
 	// Test production execution start failure
-	t.Setenv(env.EnvVarName, env.EnvTypeProd)
+	t.Setenv(goenv.EnvVarName, goenv.Prod)
 
 	mockCommander := commander.NewMock()
 	rpitx := &RPITX{
@@ -760,7 +760,7 @@ func TestPIFMRDS_Validate_ControlPipeError(t *testing.T) {
 
 func TestRPITX_StopWithoutExecution(t *testing.T) {
 	// Test stopping when nothing is executing
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	// Reset singleton for test
 	instance = nil
@@ -781,7 +781,7 @@ func TestRPITX_StopWithoutExecution(t *testing.T) {
 
 func TestRPITX_StreamOutputs_NotExecuting(t *testing.T) {
 	// Test StreamOutputs when not executing
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	rpitx := &RPITX{
 		modules: map[ModuleName]Module{
@@ -818,7 +818,7 @@ func TestRPITX_StreamOutputs_NotExecuting(t *testing.T) {
 }
 
 func TestRPITX_PrepareCommand_Production(t *testing.T) {
-	t.Setenv(env.EnvVarName, env.EnvTypeProd)
+	t.Setenv(goenv.EnvVarName, goenv.Prod)
 
 	rpitx := &RPITX{
 		config: Config{Path: "/home/test/rpitx"},
@@ -872,7 +872,7 @@ func TestRPITX_PrepareCommand_Production(t *testing.T) {
 
 func TestRPITX_PrepareCommand_Development(t *testing.T) {
 	// Test that development mode uses mock execution
-	t.Setenv(env.EnvVarName, env.EnvTypeDev)
+	t.Setenv(goenv.EnvVarName, goenv.Dev)
 
 	rpitx := &RPITX{
 		config: Config{Path: "/home/test/rpitx"},
