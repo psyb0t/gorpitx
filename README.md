@@ -1,5 +1,8 @@
 # gorpitx
 
+[![version](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/version.svg)](https://github.com/psyb0t/gorpitx/releases)
+[![license](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/license.svg)](LICENSE)
+
 🚀 **Go wrapper that executes rpitx modules without the hassle.**
 
 Tired of wrestling with raw C binaries? This Go interface wraps rpitx so you can transmit radio signals cleanly. Singleton pattern because global state should be managed properly, and robust process management because crashes suck.
