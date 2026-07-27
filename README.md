@@ -1,5 +1,6 @@
 # gorpitx
 
+[![CI](https://github.com/psyb0t/gorpitx/actions/workflows/pipeline.yml/badge.svg?branch=main)](https://github.com/psyb0t/gorpitx/actions/workflows/pipeline.yml)
 [![coverage](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/coverage.svg)](https://github.com/psyb0t/gorpitx/actions/workflows/pipeline.yml)
 [![version](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/version.svg)](https://github.com/psyb0t/gorpitx/releases)
 [![license](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/license.svg)](LICENSE)
