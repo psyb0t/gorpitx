@@ -2,6 +2,12 @@
 
 All notable changes per release. Versions follow [semver](https://semver.org).
 
+## v0.1.4 — 2026-07-27
+
+Fix badges CI job — add needs dependency so the coverage badge waits for the coverage artifact.
+
+- Added `needs: [call-go-workflow]` to the `badges` job in `.github/workflows/pipeline.yml`. Previously `badges` had no dependency on `call-go-workflow`, so it could start before the `coverage-percent.txt` artifact produced by `make test-coverage` existed, breaking the coverage badge.
+
 ## v0.1.3 — 2026-07-27
 
 Modernize to Go 1.26 and switch to structured logging.
