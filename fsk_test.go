@@ -32,7 +32,7 @@ func TestFSK_ParseArgs_Success(t *testing.T) {
 			input: FSK{
 				InputType: InputTypeText,
 				Text:      "TEST MESSAGE",
-				BaudRate:  intPtr(100),
+				BaudRate:  new(100),
 				Frequency: 434000000.0,
 			},
 			expectedArgs:  []string{"100", "434000000"},
@@ -53,7 +53,7 @@ func TestFSK_ParseArgs_Success(t *testing.T) {
 			input: FSK{
 				InputType: InputTypeFile,
 				File:      ".fixtures/test.txt",
-				BaudRate:  intPtr(300),
+				BaudRate:  new(300),
 				Frequency: 28070000.0,
 			},
 			expectedArgs:  []string{"300", "28070000"},
@@ -173,7 +173,7 @@ func TestFSK_ParseArgs_ValidationErrors(t *testing.T) {
 			input: FSK{
 				InputType: InputTypeText,
 				Text:      "TEST",
-				BaudRate:  intPtr(-50),
+				BaudRate:  new(-50),
 				Frequency: 431000000.0,
 			},
 			expectedError: "baud rate must be positive",
@@ -183,7 +183,7 @@ func TestFSK_ParseArgs_ValidationErrors(t *testing.T) {
 			input: FSK{
 				InputType: InputTypeText,
 				Text:      "TEST",
-				BaudRate:  intPtr(0),
+				BaudRate:  new(0),
 				Frequency: 431000000.0,
 			},
 			expectedError: "baud rate must be positive",
@@ -305,7 +305,7 @@ func TestFSK_validateBaudRate(t *testing.T) {
 	}{
 		{
 			name:        "valid baud rate",
-			baudRate:    intPtr(50),
+			baudRate:    new(50),
 			expectError: false,
 		},
 		{
@@ -315,18 +315,18 @@ func TestFSK_validateBaudRate(t *testing.T) {
 		},
 		{
 			name:        "high baud rate",
-			baudRate:    intPtr(9600),
+			baudRate:    new(9600),
 			expectError: false,
 		},
 		{
 			name:        "zero baud rate",
-			baudRate:    intPtr(0),
+			baudRate:    new(0),
 			expectError: true,
 			errorMsg:    "baud rate must be positive",
 		},
 		{
 			name:        "negative baud rate",
-			baudRate:    intPtr(-50),
+			baudRate:    new(-50),
 			expectError: true,
 			errorMsg:    "baud rate must be positive",
 		},
@@ -381,7 +381,7 @@ func TestFSK_buildArgs(t *testing.T) {
 		{
 			name: "custom baud rate",
 			fsk: FSK{
-				BaudRate:  intPtr(300),
+				BaudRate:  new(300),
 				Frequency: 144500000.0,
 			},
 			expectedArgs: []string{"300", "144500000"},
@@ -389,7 +389,7 @@ func TestFSK_buildArgs(t *testing.T) {
 		{
 			name: "high frequency",
 			fsk: FSK{
-				BaudRate:  intPtr(1200),
+				BaudRate:  new(1200),
 				Frequency: 1296000000.0,
 			},
 			expectedArgs: []string{"1200", "1296000000"},

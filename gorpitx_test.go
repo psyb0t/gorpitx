@@ -641,13 +641,13 @@ func TestPIFMRDS_ControlPipeValidation(t *testing.T) {
 		},
 		{
 			name:        "empty control pipe",
-			controlPipe: stringPtr("   "),
+			controlPipe: new("   "),
 			expectError: true,
 			errorMsg:    "control pipe path cannot be empty when specified",
 		},
 		{
 			name:        "non-existent control pipe",
-			controlPipe: stringPtr("/tmp/nonexistent.pipe"),
+			controlPipe: new("/tmp/nonexistent.pipe"),
 			expectError: true,
 			errorMsg:    "control pipe does not exist",
 		},
@@ -903,11 +903,6 @@ func TestRPITX_PrepareCommand_Development(t *testing.T) {
 	}
 
 	t.Logf("Development command: %s %v", cmdName, cmdArgs)
-}
-
-// Helper functions for test.
-func stringPtr(s string) *string {
-	return &s
 }
 
 func contains(slice []string, item string) bool {

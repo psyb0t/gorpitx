@@ -2,11 +2,11 @@ package gorpitx
 
 import (
 	_ "embed"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/psyb0t/ctxerrors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,6 +17,8 @@ const (
 	dirPerm    = 0o750
 	scriptPerm = 0o600
 	execPerm   = 0o700
+
+	exitCodeError = 1
 )
 
 // fskScript contains the embedded FSK script content
@@ -53,7 +55,11 @@ func writeAllScripts() {
 		dirPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to create script directory: %v", err)
+		slog.Error("failed to create script directory",
+			"path", filepath.Dir(fskScriptPath),
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	err = os.MkdirAll(
@@ -61,7 +67,11 @@ func writeAllScripts() {
 		dirPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to create script directory: %v", err)
+		slog.Error("failed to create script directory",
+			"path", filepath.Dir(audioSockBroadcastPath),
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	err = os.MkdirAll(
@@ -69,7 +79,11 @@ func writeAllScripts() {
 		dirPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to create script directory: %v", err)
+		slog.Error("failed to create script directory",
+			"path", filepath.Dir(modulationPath),
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	// Write FSK script
@@ -79,12 +93,17 @@ func writeAllScripts() {
 		scriptPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to write FSK script: %v", err)
+		slog.Error("failed to write FSK script", "path", fskScriptPath, "err", err)
+		os.Exit(exitCodeError)
 	}
 
 	err = os.Chmod(fskScriptPath, execPerm)
 	if err != nil {
-		logrus.Fatalf("failed to make FSK script executable: %v", err)
+		slog.Error("failed to make FSK script executable",
+			"path", fskScriptPath,
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	// Write AudioSock script
@@ -94,12 +113,20 @@ func writeAllScripts() {
 		scriptPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to write AudioSock script: %v", err)
+		slog.Error("failed to write AudioSock script",
+			"path", audioSockBroadcastPath,
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	err = os.Chmod(audioSockBroadcastPath, execPerm)
 	if err != nil {
-		logrus.Fatalf("failed to make AudioSock script executable: %v", err)
+		slog.Error("failed to make AudioSock script executable",
+			"path", audioSockBroadcastPath,
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	// Write modulation script
@@ -109,12 +136,20 @@ func writeAllScripts() {
 		scriptPerm,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to write modulation script: %v", err)
+		slog.Error("failed to write modulation script",
+			"path", modulationPath,
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 
 	err = os.Chmod(modulationPath, execPerm)
 	if err != nil {
-		logrus.Fatalf("failed to make modulation script executable: %v", err)
+		slog.Error("failed to make modulation script executable",
+			"path", modulationPath,
+			"err", err,
+		)
+		os.Exit(exitCodeError)
 	}
 }
 

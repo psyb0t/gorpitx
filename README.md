@@ -1,5 +1,6 @@
 # gorpitx
 
+[![coverage](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/coverage.svg)](https://github.com/psyb0t/gorpitx/actions/workflows/pipeline.yml)
 [![version](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/version.svg)](https://github.com/psyb0t/gorpitx/releases)
 [![license](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/license.svg)](LICENSE)
 
@@ -1357,7 +1358,7 @@ func ValidateRange(value, min, max float64) error
 - [`github.com/psyb0t/goenv`](https://github.com/psyb0t/goenv) - Environment detection
 - [`github.com/psyb0t/ctxerrors`](https://github.com/psyb0t/ctxerrors) - Context-aware errors
 - [`github.com/psyb0t/gonfiguration`](https://github.com/psyb0t/gonfiguration) - Configuration parsing
-- [`github.com/sirupsen/logrus`](https://github.com/sirupsen/logrus) - Logging
+- `log/slog` (stdlib) - Structured logging
 
 ## 📄 License
 

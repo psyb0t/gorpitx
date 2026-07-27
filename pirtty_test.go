@@ -20,7 +20,7 @@ func TestPIRTTY_ParseArgs_Success(t *testing.T) {
 			name: "basic PIRTTY parameters",
 			input: PIRTTY{
 				Frequency:      14070000.0, // 14.070 MHz
-				SpaceFrequency: intPtr(170),
+				SpaceFrequency: new(170),
 				Message:        "CQ DE N0CALL",
 			},
 			expectedArgs:  []string{"14070000", "170", "CQ DE N0CALL"},
@@ -30,7 +30,7 @@ func TestPIRTTY_ParseArgs_Success(t *testing.T) {
 			name: "PIRTTY with different frequency",
 			input: PIRTTY{
 				Frequency:      28070000.0, // 28.070 MHz
-				SpaceFrequency: intPtr(200),
+				SpaceFrequency: new(200),
 				Message:        "RTTY TEST MESSAGE",
 			},
 			expectedArgs:  []string{"28070000", "200", "RTTY TEST MESSAGE"},
@@ -40,7 +40,7 @@ func TestPIRTTY_ParseArgs_Success(t *testing.T) {
 			name: "PIRTTY with long message",
 			input: PIRTTY{
 				Frequency:      7040000.0, // 7.040 MHz
-				SpaceFrequency: intPtr(85),
+				SpaceFrequency: new(85),
 				Message:        "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 1234567890",
 			},
 			expectedArgs: []string{
@@ -119,7 +119,7 @@ func TestPIRTTY_ParseArgs_ValidationErrors(t *testing.T) {
 			name: "negative space frequency",
 			input: PIRTTY{
 				Frequency:      14070000.0,
-				SpaceFrequency: intPtr(-170),
+				SpaceFrequency: new(-170),
 				Message:        "TEST",
 			},
 			expectedError: "space frequency must be positive",
@@ -306,7 +306,7 @@ func TestPIRTTY_buildArgs(t *testing.T) {
 			name: "basic parameters",
 			pirtty: PIRTTY{
 				Frequency:      14070000.0,
-				SpaceFrequency: intPtr(170),
+				SpaceFrequency: new(170),
 				Message:        "TEST MESSAGE",
 			},
 			expectedArgs: []string{"14070000", "170", "TEST MESSAGE"},
@@ -315,7 +315,7 @@ func TestPIRTTY_buildArgs(t *testing.T) {
 			name: "different frequency and space",
 			pirtty: PIRTTY{
 				Frequency:      28070000.0,
-				SpaceFrequency: intPtr(200),
+				SpaceFrequency: new(200),
 				Message:        "ANOTHER TEST",
 			},
 			expectedArgs: []string{"28070000", "200", "ANOTHER TEST"},
@@ -324,7 +324,7 @@ func TestPIRTTY_buildArgs(t *testing.T) {
 			name: "message with spaces and special chars",
 			pirtty: PIRTTY{
 				Frequency:      7040000.0,
-				SpaceFrequency: intPtr(85),
+				SpaceFrequency: new(85),
 				Message:        "HELLO WORLD! 123",
 			},
 			expectedArgs: []string{"7040000", "85", "HELLO WORLD! 123"},

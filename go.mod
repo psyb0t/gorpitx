@@ -1,11 +1,8 @@
 module github.com/psyb0t/gorpitx
 
-go 1.25
+go 1.26
 
-tool (
-	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-	golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize
-)
+tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 require (
 	github.com/psyb0t/commander v0.4.1
@@ -13,7 +10,6 @@ require (
 	github.com/psyb0t/ctxerrors v0.2.0
 	github.com/psyb0t/goenv v1.0.1
 	github.com/psyb0t/gonfiguration v1.2.0
-	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -171,6 +167,7 @@ require (
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.29.0 // indirect
 	github.com/securego/gosec/v2 v2.22.7 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect
 	github.com/sonatard/noctx v0.4.0 // indirect
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
@@ -213,7 +210,6 @@ require (
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.39.1-0.20260109155911-b69ac100ecb7 // indirect
-	golang.org/x/tools/gopls v0.21.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

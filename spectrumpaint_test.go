@@ -193,7 +193,7 @@ func TestSPECTRUMPAINT_BuildArgs(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: testFile.Name(),
 				Frequency:   434000000.0,
-				Excursion:   floatPtr(100000.0),
+				Excursion:   new(100000.0),
 			},
 			expectArgs: []string{testFile.Name(), "434000000", "100000"},
 		},
@@ -210,7 +210,7 @@ func TestSPECTRUMPAINT_BuildArgs(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: testFile.Name(),
 				Frequency:   28000000.0,
-				Excursion:   floatPtr(50000.0),
+				Excursion:   new(50000.0),
 			},
 			expectArgs: []string{testFile.Name(), "28000000", "50000"},
 		},
@@ -366,7 +366,7 @@ func TestSPECTRUMPAINT_ValidateExcursion(t *testing.T) {
 	}{
 		{
 			name:        "valid excursion",
-			excursion:   floatPtr(100000.0),
+			excursion:   new(100000.0),
 			expectError: false,
 		},
 		{
@@ -376,13 +376,13 @@ func TestSPECTRUMPAINT_ValidateExcursion(t *testing.T) {
 		},
 		{
 			name:        "zero excursion",
-			excursion:   floatPtr(0.0),
+			excursion:   new(0.0),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative excursion",
-			excursion:   floatPtr(-100000.0),
+			excursion:   new(-100000.0),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
@@ -433,7 +433,7 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: testFile.Name(),
 				Frequency:   434000000.0,
-				Excursion:   floatPtr(100000.0),
+				Excursion:   new(100000.0),
 			},
 			expectError: false,
 		},
@@ -450,7 +450,7 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: "",
 				Frequency:   434000000.0,
-				Excursion:   floatPtr(100000.0),
+				Excursion:   new(100000.0),
 			},
 			expectError: true,
 		},
@@ -459,7 +459,7 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: testFile.Name(),
 				Frequency:   0.0,
-				Excursion:   floatPtr(100000.0),
+				Excursion:   new(100000.0),
 			},
 			expectError: true,
 		},
@@ -468,7 +468,7 @@ func TestSPECTRUMPAINT_Validate(t *testing.T) {
 			spectrum: SPECTRUMPAINT{
 				PictureFile: testFile.Name(),
 				Frequency:   434000000.0,
-				Excursion:   floatPtr(-100000.0),
+				Excursion:   new(-100000.0),
 			},
 			expectError: true,
 		},

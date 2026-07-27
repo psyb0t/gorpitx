@@ -7,16 +7,21 @@ dep: ## Get project dependencies
 	@go mod tidy
 	@go mod vendor
 
-lint: ## Lint all Golang files and shell scripts
+lint: ## Lint all Golang files
 	@echo "Linting all Go files..."
-	@go tool modernize -test ./...
+	@out=$$(go fix -diff ./... 2>&1); \
+	if [ -n "$$out" ]; then \
+		echo "$$out"; \
+		echo "go fix found issues. Run 'make lint-fix' to apply."; \
+		exit 1; \
+	fi
 	@go tool golangci-lint run --timeout=30m0s ./...
 	@echo "Checking shell scripts..."
 	@shellcheck scripts/*.sh
 
-lint-fix: ## Lint and fix Golang files, check shell scripts
-	@echo "Linting all Go files..."
-	@go tool modernize -fix -test ./...
+lint-fix: ## Lint all Golang files and fix
+	@echo "Linting and fixing all Go files..."
+	@go fix ./...
 	@go tool golangci-lint run --fix --timeout=30m0s ./...
 	@echo "Checking shell scripts (no auto-fix available)..."
 	@shellcheck scripts/*.sh
@@ -34,6 +39,8 @@ test-coverage: ## Run tests with coverage check. Fails if coverage is below the 
 		exit 1; \
 	fi; \
 	result=$$(go tool cover -func=coverage.txt | grep -oP 'total:\s+\(statements\)\s+\K\d+' || echo "0"); \
+	pct=$$(go tool cover -func=coverage.txt | grep -oP 'total:\s+\(statements\)\s+\K[0-9.]+' || echo "0"); \
+	echo "$$pct" > coverage-percent.txt; \
 	if [ $$result -eq 0 ]; then \
 		echo "No test coverage information available."; \
 		exit 0; \

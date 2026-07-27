@@ -151,7 +151,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 			name: "frequency with exit immediate true",
 			tune: TUNE{
 				Frequency:     434000000.0,
-				ExitImmediate: boolPtr(true),
+				ExitImmediate: new(true),
 			},
 			expectArgs: []string{"-f", "434000000", "-e"},
 		},
@@ -159,7 +159,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 			name: "frequency with exit immediate false",
 			tune: TUNE{
 				Frequency:     434000000.0,
-				ExitImmediate: boolPtr(false),
+				ExitImmediate: new(false),
 			},
 			expectArgs: []string{"-f", "434000000"},
 		},
@@ -167,7 +167,7 @@ func TestTUNE_BuildArgs(t *testing.T) {
 			name: "frequency with ppm",
 			tune: TUNE{
 				Frequency: 434000000.0,
-				PPM:       floatPtr(2.5),
+				PPM:       new(2.5),
 			},
 			expectArgs: []string{"-f", "434000000", "-p", "2.5"},
 		},
@@ -175,8 +175,8 @@ func TestTUNE_BuildArgs(t *testing.T) {
 			name: "all parameters",
 			tune: TUNE{
 				Frequency:     434000000.0,
-				ExitImmediate: boolPtr(true),
-				PPM:           floatPtr(1.5),
+				ExitImmediate: new(true),
+				PPM:           new(1.5),
 			},
 			expectArgs: []string{"-f", "434000000", "-e", "-p", "1.5"},
 		},
@@ -272,24 +272,24 @@ func TestTUNE_ValidatePPM(t *testing.T) {
 		},
 		{
 			name:        "zero ppm",
-			ppm:         floatPtr(0.0),
+			ppm:         new(0.0),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "negative ppm",
-			ppm:         floatPtr(-1.0),
+			ppm:         new(-1.0),
 			expectError: true,
 			errorType:   commonerrors.ErrInvalidValue,
 		},
 		{
 			name:        "valid positive ppm",
-			ppm:         floatPtr(2.5),
+			ppm:         new(2.5),
 			expectError: false,
 		},
 		{
 			name:        "valid small positive ppm",
-			ppm:         floatPtr(0.1),
+			ppm:         new(0.1),
 			expectError: false,
 		},
 	}
@@ -331,16 +331,16 @@ func TestTUNE_Validate(t *testing.T) {
 			name: "valid complete tune",
 			tune: TUNE{
 				Frequency:     434000000.0,
-				ExitImmediate: boolPtr(true),
-				PPM:           floatPtr(2.5),
+				ExitImmediate: new(true),
+				PPM:           new(2.5),
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid - missing frequency",
 			tune: TUNE{
-				ExitImmediate: boolPtr(true),
-				PPM:           floatPtr(2.5),
+				ExitImmediate: new(true),
+				PPM:           new(2.5),
 			},
 			expectError: true,
 		},
@@ -348,7 +348,7 @@ func TestTUNE_Validate(t *testing.T) {
 			name: "invalid - negative frequency",
 			tune: TUNE{
 				Frequency: -434000000.0,
-				PPM:       floatPtr(2.5),
+				PPM:       new(2.5),
 			},
 			expectError: true,
 		},
@@ -356,7 +356,7 @@ func TestTUNE_Validate(t *testing.T) {
 			name: "invalid - negative ppm",
 			tune: TUNE{
 				Frequency: 434000000.0,
-				PPM:       floatPtr(-1.0),
+				PPM:       new(-1.0),
 			},
 			expectError: true,
 		},

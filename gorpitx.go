@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	commonerrors "github.com/psyb0t/common-go/errors"
 	"github.com/psyb0t/ctxerrors"
 	"github.com/psyb0t/goenv"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -113,8 +113,8 @@ func (r *RPITX) Exec(
 
 	defer r.cleanupExecution(ctx)
 
-	logrus.Debugf("executing module %s with args %s", name, args)
-	defer logrus.Debugf("finished executing module %s", name)
+	slog.Debug("executing module", "module", name, "args", string(args))
+	defer slog.Debug("finished executing module", "module", name)
 
 	cmdName, cmdArgs, stdin, err := r.prepareCommand(name, args)
 	if err != nil {
@@ -141,9 +141,8 @@ func (r *RPITX) cleanupExecution(ctx context.Context) {
 	r.processMu.Lock()
 
 	if r.process != nil {
-		// fkin kill the fuckin' process
 		if err := r.process.Kill(ctx); err != nil {
-			logrus.Errorf("failed to kill the fuckin' process: %v", err)
+			slog.Error("failed to kill process", "err", err)
 		}
 	}
 
@@ -194,7 +193,7 @@ func (r *RPITX) prepareCommand(
 		cmdArgs = append(cmdArgs, scriptPath)
 		cmdArgs = append(cmdArgs, parsedArgs...)
 
-		logrus.Debugf("script command prepared: %s %v", cmdName, cmdArgs)
+		slog.Debug("script command prepared", "cmd", cmdName, "args", cmdArgs)
 
 		return cmdName, cmdArgs, stdin, nil
 	}
@@ -203,7 +202,7 @@ func (r *RPITX) prepareCommand(
 	cmdArgs = append(cmdArgs, binaryPath)
 	cmdArgs = append(cmdArgs, parsedArgs...)
 
-	logrus.Debugf("production command prepared: %s %v", cmdName, cmdArgs)
+	slog.Debug("production command prepared", "cmd", cmdName, "args", cmdArgs)
 
 	return cmdName, cmdArgs, stdin, nil
 }
@@ -248,7 +247,7 @@ func (r *RPITX) startProcess(
 
 func (r *RPITX) StreamOutputs(stdout, stderr chan<- string) {
 	if !r.isExecuting.Load() {
-		logrus.WithError(ErrNotExecuting).Warn("not executing")
+		slog.Warn("not executing", "err", ErrNotExecuting)
 
 		return
 	}
@@ -263,7 +262,7 @@ func (r *RPITX) StreamOutputs(stdout, stderr chan<- string) {
 		return
 	}
 
-	logrus.Warn("no process to stream")
+	slog.Warn("no process to stream")
 }
 
 // StreamOutputsAsync starts streaming outputs for the currently executing
@@ -290,7 +289,7 @@ func (r *RPITX) StreamOutputsAsync(stdout, stderr chan<- string) {
 
 			if !r.isExecuting.Load() {
 				// Execution finished before we could get the process
-				logrus.Warn("execution finished before streaming could start")
+				slog.Warn("execution finished before streaming could start")
 
 				break
 			}
@@ -342,7 +341,7 @@ func (r *RPITX) waitWithTimeout(
 
 	case <-time.After(timeout):
 		// Timeout occurred - use graceful stop with timeout
-		logrus.Debug("timeout reached, performing graceful stop")
+		slog.Debug("timeout reached, performing graceful stop")
 
 		stopCtx, cancel := context.WithTimeout(
 			ctx,
@@ -353,8 +352,7 @@ func (r *RPITX) waitWithTimeout(
 
 		err := r.Stop(stopCtx)
 		if err != nil {
-			logrus.WithError(err).
-				Warn("failed to gracefully stop process after timeout")
+			slog.Warn("failed to gracefully stop process after timeout", "err", err)
 		}
 
 		// Wait for the stop to complete
@@ -377,7 +375,7 @@ func (r *RPITX) getMockExecCmd(
 	name ModuleName,
 	args []string,
 ) (string, []string) {
-	logrus.Debugf("preparing mock execution of module %s with args %s", name, args)
+	slog.Debug("preparing mock execution of module", "module", name, "args", args)
 
 	// Build the mock command that echoes every second
 	mockCmd := fmt.Sprintf(`

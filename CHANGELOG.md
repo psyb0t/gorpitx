@@ -2,6 +2,16 @@
 
 All notable changes per release. Versions follow [semver](https://semver.org).
 
+## v0.1.3 — 2026-07-27
+
+Modernize to Go 1.26 and switch to structured logging.
+
+- Go 1.26; dropped the `modernize` dev tool from `go.mod` (its checks are now covered by `go fix`).
+- `make lint` now runs `go fix -diff ./...` first (fails with a pointer to `make lint-fix` if it finds anything) before `golangci-lint`.
+- Added a coverage badge (`make test-coverage` now writes `coverage-percent.txt`; wired into the `badges` CI job and README).
+- Replaced `github.com/sirupsen/logrus` with the standard library `log/slog` for structured logging throughout.
+- Error wrapping already used `github.com/psyb0t/ctxerrors` consistently; no changes needed there.
+
 ## v0.1.2 — 2026-07-27
 
 Add README status badges.

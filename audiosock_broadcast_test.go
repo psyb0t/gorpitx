@@ -29,7 +29,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/custom_socket",
 				Frequency:  434000000.0,
-				SampleRate: intPtr(96000),
+				SampleRate: new(96000),
 			},
 			expectedArgs: []string{
 				"434000000", "/tmp/custom_socket", "96000", "FM", "1",
@@ -40,7 +40,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/var/tmp/voice_socket",
 				Frequency:  1296000000.0,
-				SampleRate: intPtr(22050),
+				SampleRate: new(22050),
 			},
 			expectedArgs: []string{
 				"1296000000", "/var/tmp/voice_socket", "22050", "FM", "1",
@@ -51,7 +51,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				Modulation: stringPtr("FM"),
+				Modulation: new("FM"),
 			},
 			expectedArgs: []string{
 				"144500000", "/tmp/audio_socket", "48000", "FM", "1",
@@ -62,7 +62,7 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				Gain:       floatPtr(2.5),
+				Gain:       new(2.5),
 			},
 			expectedArgs: []string{
 				"144500000", "/tmp/audio_socket", "48000", "FM", "2.5",
@@ -73,9 +73,9 @@ func TestAudioSockBroadcast_ParseArgs_Success(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/custom_socket",
 				Frequency:  434000000.0,
-				SampleRate: intPtr(96000),
-				Modulation: stringPtr("USB"),
-				Gain:       floatPtr(3.0),
+				SampleRate: new(96000),
+				Modulation: new("USB"),
+				Gain:       new(3.0),
 			},
 			expectedArgs: []string{
 				"434000000", "/tmp/custom_socket", "96000", "USB", "3",
@@ -154,7 +154,7 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				SampleRate: intPtr(-48000),
+				SampleRate: new(-48000),
 			},
 			expectedError: "sample rate must be positive",
 		},
@@ -163,7 +163,7 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				SampleRate: intPtr(0),
+				SampleRate: new(0),
 			},
 			expectedError: "sample rate must be positive",
 		},
@@ -172,7 +172,7 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				Modulation: stringPtr("INVALID"),
+				Modulation: new("INVALID"),
 			},
 			expectedError: "invalid modulation",
 		},
@@ -181,7 +181,7 @@ func TestAudioSockBroadcast_ParseArgs_ValidationErrors(t *testing.T) {
 			input: AudioSockBroadcast{
 				SocketPath: "/tmp/audio_socket",
 				Frequency:  144500000.0,
-				Gain:       floatPtr(-1.0),
+				Gain:       new(-1.0),
 			},
 			expectedError: "gain must be non-negative",
 		},
@@ -277,7 +277,7 @@ func TestAudioSockBroadcast_validateSampleRate(t *testing.T) {
 	}{
 		{
 			name:        "valid sample rate",
-			sampleRate:  intPtr(48000),
+			sampleRate:  new(48000),
 			expectError: false,
 		},
 		{
@@ -287,23 +287,23 @@ func TestAudioSockBroadcast_validateSampleRate(t *testing.T) {
 		},
 		{
 			name:        "high sample rate",
-			sampleRate:  intPtr(96000),
+			sampleRate:  new(96000),
 			expectError: false,
 		},
 		{
 			name:        "low sample rate",
-			sampleRate:  intPtr(8000),
+			sampleRate:  new(8000),
 			expectError: false,
 		},
 		{
 			name:        "zero sample rate",
-			sampleRate:  intPtr(0),
+			sampleRate:  new(0),
 			expectError: true,
 			errorMsg:    "sample rate must be positive",
 		},
 		{
 			name:        "negative sample rate",
-			sampleRate:  intPtr(-48000),
+			sampleRate:  new(-48000),
 			expectError: true,
 			errorMsg:    "sample rate must be positive",
 		},
@@ -347,7 +347,7 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 			usb: AudioSockBroadcast{
 				SocketPath: "/var/tmp/voice_socket",
 				Frequency:  434000000.0,
-				SampleRate: intPtr(96000),
+				SampleRate: new(96000),
 			},
 			expectedArgs: []string{
 				"434000000", "/var/tmp/voice_socket", "96000", "FM", "1",
@@ -358,7 +358,7 @@ func TestAudioSockBroadcast_buildArgs(t *testing.T) {
 			usb: AudioSockBroadcast{
 				SocketPath: "/tmp/narrowband_socket",
 				Frequency:  1296000000.0,
-				SampleRate: intPtr(16000),
+				SampleRate: new(16000),
 			},
 			expectedArgs: []string{
 				"1296000000", "/tmp/narrowband_socket", "16000", "FM", "1",
@@ -388,55 +388,55 @@ func TestAudioSockBroadcast_validateModulation(t *testing.T) {
 		},
 		{
 			name:        "valid AM modulation",
-			modulation:  stringPtr("AM"),
+			modulation:  new("AM"),
 			expectError: false,
 		},
 		{
 			name:        "valid DSB modulation",
-			modulation:  stringPtr("DSB"),
+			modulation:  new("DSB"),
 			expectError: false,
 		},
 		{
 			name:        "valid USB modulation",
-			modulation:  stringPtr("USB"),
+			modulation:  new("USB"),
 			expectError: false,
 		},
 		{
 			name:        "valid LSB modulation",
-			modulation:  stringPtr("LSB"),
+			modulation:  new("LSB"),
 			expectError: false,
 		},
 		{
 			name:        "valid FM modulation",
-			modulation:  stringPtr("FM"),
+			modulation:  new("FM"),
 			expectError: false,
 		},
 		{
 			name:        "invalid modulation - old WFM",
-			modulation:  stringPtr("WFM"),
+			modulation:  new("WFM"),
 			expectError: true,
 			errorMsg:    "invalid modulation",
 		},
 		{
 			name:        "invalid modulation - old NFM",
-			modulation:  stringPtr("NFM"),
+			modulation:  new("NFM"),
 			expectError: true,
 			errorMsg:    "invalid modulation",
 		},
 		{
 			name:        "valid RAW modulation",
-			modulation:  stringPtr("RAW"),
+			modulation:  new("RAW"),
 			expectError: false,
 		},
 		{
 			name:        "invalid modulation",
-			modulation:  stringPtr("INVALID"),
+			modulation:  new("INVALID"),
 			expectError: true,
 			errorMsg:    "invalid modulation",
 		},
 		{
 			name:        "case sensitive - lowercase",
-			modulation:  stringPtr("fm"),
+			modulation:  new("fm"),
 			expectError: true,
 			errorMsg:    "invalid modulation",
 		},
@@ -473,33 +473,33 @@ func TestAudioSockBroadcast_validateGain(t *testing.T) {
 		},
 		{
 			name:        "valid gain - 1.0",
-			gain:        floatPtr(1.0),
+			gain:        new(1.0),
 			expectError: false,
 		},
 		{
 			name:        "valid gain - 2.5",
-			gain:        floatPtr(2.5),
+			gain:        new(2.5),
 			expectError: false,
 		},
 		{
 			name:        "valid gain - zero",
-			gain:        floatPtr(0.0),
+			gain:        new(0.0),
 			expectError: false,
 		},
 		{
 			name:        "valid gain - high value",
-			gain:        floatPtr(10.0),
+			gain:        new(10.0),
 			expectError: false,
 		},
 		{
 			name:        "invalid gain - negative",
-			gain:        floatPtr(-1.0),
+			gain:        new(-1.0),
 			expectError: true,
 			errorMsg:    "gain must be non-negative",
 		},
 		{
 			name:        "invalid gain - very negative",
-			gain:        floatPtr(-5.5),
+			gain:        new(-5.5),
 			expectError: true,
 			errorMsg:    "gain must be non-negative",
 		},
