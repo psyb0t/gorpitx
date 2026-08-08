@@ -2,6 +2,26 @@
 
 All notable changes per release. Versions follow [semver](https://semver.org).
 
+## v0.1.8 — 2026-08-08
+
+Documentation. No code change. Every example in the README was calling an API
+that does not exist.
+
+- **`rpitx.ExecuteModule(...)` is not a method.** The real one is
+  `Exec(ctx, name, args, timeout)`. Every execution example is rewritten against
+  it, including the imports the snippets never showed.
+- **`Stop` takes a context only** — `Stop(ctx) error`. The README passed it a
+  duration; a timeout is expressed with `context.WithTimeout`.
+- **Minimum frequency is 5 kHz, not 50 kHz** (`minFreqKHz = 5` in
+  `gorpitx.go`), corrected in both places it appeared.
+- The "Common Validation Functions Needed" section presented `ValidateFrequency`,
+  `ValidateRange`, `ValidateEnum` and `ValidateFileExists` as if they were part
+  of the package. None exist. The section now says so at the top rather than
+  reading as an API listing.
+- "other planned modules use Hz" → every other module uses Hz; they are shipped,
+  not planned.
+- Added a table of contents.
+
 ## v0.1.7 — 2026-08-08
 
 Repository infrastructure only. No library code changed.

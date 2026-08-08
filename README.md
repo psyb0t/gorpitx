@@ -10,6 +10,54 @@
 
 Tired of wrestling with raw C binaries? This Go interface wraps rpitx so you can transmit radio signals cleanly. Singleton pattern because global state should be managed properly, and robust process management because crashes suck.
 
+## Table of Contents
+
+**Getting Started**
+
+- [What It Does](#-what-it-does)
+- [Quick Start](#-quick-start)
+- [Installation Requirements](#-installation-requirements)
+  - [Install rpitx](#install-rpitx)
+  - [Install Additional Dependencies](#install-additional-dependencies)
+  - [Configure Path (Optional)](#configure-path-optional)
+
+**Module Configuration**
+
+- [PIFMRDS Module Configuration](#-pifmrds-module-configuration)
+- [TUNE Module Configuration](#-tune-module-configuration)
+- [PICHIRP Module Configuration](#-pichirp-module-configuration)
+- [MORSE Module Configuration](#-morse-module-configuration)
+- [POCSAG Module Configuration](#-pocsag-module-configuration)
+- [SPECTRUMPAINT Module Configuration](#-spectrumpaint-module-configuration)
+- [FT8 Module Configuration](#-ft8-module-configuration)
+- [PISSTV Module Configuration](#-pisstv-module-configuration)
+- [PIRTTY Module Configuration](#-pirtty-module-configuration)
+- [FSK Module Configuration](#-fsk-module-configuration)
+- [AudioSock Broadcast Module Configuration](#-audiosock-broadcast-module-configuration)
+- [SENDIQ Module Configuration](#-sendiq-module-configuration)
+
+**Runtime Control**
+
+- [Process Control](#️-process-control)
+  - [Stream Output](#stream-output)
+  - [Graceful Stop](#graceful-stop)
+  - [Execution State](#execution-state)
+- [Environment Configuration](#️-environment-configuration)
+  - [Development Mode](#development-mode)
+  - [Production Mode](#production-mode)
+- [Error Handling](#-error-handling)
+
+**Reference**
+
+- [Architecture](#-architecture)
+  - [Module Interface](#module-interface)
+  - [Frequency Utilities](#frequency-utilities)
+- [TODO: Remaining Modules Implementation](#-todo-remaining-modules-implementation)
+  - [Common Validation Functions Needed](#common-validation-functions-needed)
+- [Legal Notice](#️-legal-notice)
+- [Package Dependencies](#-package-dependencies)
+- [License](#-license)
+
 ## 📡 What It Does
 
 Executes rpitx modules through Go without the usual mess of manual process management. Supports dev mode (mock transmission for testing) and production mode (actual RF transmission).
@@ -139,7 +187,7 @@ type PIFMRDS struct {
 
 ```go
 type TUNE struct {
-    Frequency     float64  // Hz, required, 50kHz-1500MHz
+    Frequency     float64  // Hz, required, 5kHz-1500MHz
     ExitImmediate *bool    // Exit without killing carrier (optional)
     PPM           *float64 // Clock correction ppm > 0 (optional)
 }
@@ -147,7 +195,7 @@ type TUNE struct {
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `ExitImmediate`: Optional boolean, exits without killing carrier when true
 - `PPM`: Optional, must be positive if specified
 
@@ -192,7 +240,7 @@ type PICHIRP struct {
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `Bandwidth`: Required, positive value in Hz
 - `Time`: Required, positive value in seconds
 
@@ -234,7 +282,7 @@ type MORSE struct {
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `Rate`: Required, positive integer, dits per minute
 - `Message`: Required, cannot be empty or whitespace only
 
@@ -268,7 +316,7 @@ if err != nil {
 
 ```go
 type POCSAG struct {
-    Frequency float64 `json:"frequency"` // Hz, required, 50kHz-1500MHz
+    Frequency float64 `json:"frequency"` // Hz, required, 5kHz-1500MHz
     BaudRate *int `json:"baudRate,omitempty"` // Optional, 512/1200/2400, default 1200
     FunctionBits *int `json:"functionBits,omitempty"` // Optional, 0-3, default 3
     NumericMode *bool `json:"numericMode,omitempty"` // Optional, default false
@@ -291,7 +339,7 @@ POCSAG uses **stdin for message data** (like the native rpitx binary), not comma
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `BaudRate`: Optional, must be 512, 1200, or 2400
 - `FunctionBits`: Optional, must be 0-3
 - `NumericMode`: Optional boolean flag for numeric mode
@@ -376,7 +424,7 @@ type SPECTRUMPAINT struct {
 **Validation Rules:**
 
 - `PictureFile`: Required, file must exist (expects raw YUV data format, 320 pixels wide)
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `Excursion`: Optional, must be positive if specified
 
 **Image Format Requirements:**
@@ -438,7 +486,7 @@ type FT8 struct {
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `Message`: Required, cannot be empty/whitespace
 - `PPM`: Optional, clock correction value (positive, negative, or zero)
 - `Offset`: Optional, frequency offset 0-2500 Hz (pift8 binary default: 1240 Hz)
@@ -539,7 +587,7 @@ type PISSTV struct {
 **Validation Rules:**
 
 - `PictureFile`: Required, file must exist (expects .rgb format, exactly 320 pixels wide)
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 
 **SSTV Implementation Details:**
 
@@ -642,7 +690,7 @@ type PIRTTY struct {
 
 **Validation Rules:**
 
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `SpaceFrequency`: Optional, positive integer in Hz if specified (default: 170, mark frequency = space + 170)
 - `Message`: Required, cannot be empty or whitespace only
 
@@ -762,7 +810,7 @@ type FSK struct {
 - `File`: Required when InputType is "file", cannot be specified with text
 - `Text`: Required when InputType is "text", cannot be specified with file
 - `BaudRate`: Optional, positive integer (default: 50 baud - cleanest in testing)
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 
 **FSK Implementation Details:**
 
@@ -885,7 +933,7 @@ type AudioSockBroadcast struct {
 **Validation Rules:**
 
 - `SocketPath`: Required, unix socket path for audio data input
-- `Frequency`: Required, positive, within RPiTX range (50kHz-1500MHz) in Hz
+- `Frequency`: Required, positive, within RPiTX range (5kHz-1500MHz) in Hz
 - `SampleRate`: Optional, positive integer in Hz (default: 48000)
 - `Modulation`: Optional, must be valid modulation (default: "FM"). Available: AM, DSB, USB, LSB, FM, RAW
 - `Gain`: Optional, non-negative float (default: 1.0)
@@ -1092,7 +1140,7 @@ Transmits I/Q (In-phase/Quadrature) data for advanced RF applications with runti
 **Configuration Fields:**
 
 - `inputFile` (string, **required**): Input file path or "-" for stdin
-- `freq` (float64, **required**): Carrier frequency in Hz (50 kHz - 1500 MHz)
+- `freq` (float64, **required**): Carrier frequency in Hz (5 kHz - 1500 MHz)
 - `sampleRate` (int, optional): Sample rate in Hz (10000-2000000, default: 48000)
   - Native max is 200,000 Hz; higher values trigger automatic decimation
 - `harmonic` (int, optional): Harmonic number (≥1, default: 1)
@@ -1109,6 +1157,13 @@ Transmits I/Q (In-phase/Quadrature) data for advanced RF applications with runti
 **Example Usage:**
 
 ```go
+import (
+    "context"
+    "encoding/json"
+    "time"
+    "github.com/psyb0t/gorpitx"
+)
+
 rpitx := gorpitx.GetInstance()
 
 config := gorpitx.SENDIQ{
@@ -1119,7 +1174,9 @@ config := gorpitx.SENDIQ{
 }
 
 configBytes, _ := json.Marshal(config)
-err := rpitx.ExecuteModule(gorpitx.ModuleNameSENDIQ, configBytes, 0, nil)
+ctx := context.Background()
+
+err := rpitx.Exec(ctx, gorpitx.ModuleNameSENDIQ, configBytes, 0) // No timeout
 ```
 
 **Runtime Control via Shared Memory:**
@@ -1214,8 +1271,10 @@ go func() {
 ### Graceful Stop
 
 ```go
-ctx := context.Background()
-err := rpitx.Stop(ctx, 3*time.Second)
+ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+defer cancel()
+
+err := rpitx.Stop(ctx)
 if err != nil {
     // Handle stop error
 }
@@ -1303,7 +1362,7 @@ New modules implement this interface with:
 - `getMaxFreqMHzDisplay() float64` - Get max frequency for error displays (1500 MHz)
 - `hasValidFreqPrecision(freqMHz float64) bool` - Check 0.1MHz precision
 
-**Note**: pifmrds uses MHz, other planned modules use Hz.
+**Note**: pifmrds uses MHz, every other module uses Hz.
 
 ## 📋 TODO: Remaining Modules Implementation
 
@@ -1337,6 +1396,10 @@ Based on the easytest modules from rpitx, here are the **2 additional modules** 
 
 ### Common Validation Functions Needed
 
+**Not implemented yet** — these are proposed signatures for validation helpers
+the FREEDV/PIOPERA modules above would need. None of them exist in the
+package today; do not import or call them.
+
 ```go
 func ValidateFrequency(freq float64, min, max float64) error
 func ValidateFileExists(path string) error
@@ -1360,6 +1423,7 @@ func ValidateRange(value, min, max float64) error
 - [`github.com/psyb0t/goenv`](https://github.com/psyb0t/goenv) - Environment detection
 - [`github.com/psyb0t/ctxerrors`](https://github.com/psyb0t/ctxerrors) - Context-aware errors
 - [`github.com/psyb0t/gonfiguration`](https://github.com/psyb0t/gonfiguration) - Configuration parsing
+- [`github.com/psyb0t/common-go`](https://github.com/psyb0t/common-go) - Shared validation error types (`errors` package)
 - `log/slog` (stdlib) - Structured logging
 
 ## 📄 License
