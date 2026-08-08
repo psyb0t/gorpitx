@@ -4,6 +4,7 @@
 [![coverage](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/coverage.svg)](https://github.com/psyb0t/gorpitx/actions/workflows/pipeline.yml)
 [![version](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/version.svg)](https://github.com/psyb0t/gorpitx/releases)
 [![license](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/license.svg)](LICENSE)
+[![imported by](https://raw.githubusercontent.com/psyb0t/gorpitx/badges/importers.svg)](https://github.com/psyb0t/gorpitx/blob/badges/importers.md)
 
 🚀 **Go wrapper that executes rpitx modules without the hassle.**
 
