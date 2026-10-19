@@ -10,6 +10,7 @@ CLAUDE.md
 research_files
 git-update.sh
 git-update.sh.debot
+.telemetry/
 
 # Vendored dependencies are committed verbatim; none of the patterns above apply to them.
 !/vendor/**

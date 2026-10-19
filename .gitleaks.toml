@@ -19,5 +19,6 @@ paths = [
   '''(^|/)CLAUDE\.md$''',
   '''^\.test[^/]*(?:/|$)''',
   '''(^|/)research_files(?:/|$)''',
+  '''(^|/)\.telemetry(?:/|$)''',
   '''(^|/)git-update\.sh(?:\.debot)?$''',
 ]

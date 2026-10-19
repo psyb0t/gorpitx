@@ -2,6 +2,23 @@
 
 All notable changes per release. Versions follow [semver](https://semver.org).
 
+## v0.1.9 — 2026-10-19
+
+Repository infrastructure only. No library code changed.
+
+- The committed `vendor/` directory was missing three files that `go mod vendor`
+  writes: both `coverage.go` files in `golang.org/x/text` and the `.env` test
+  fixture in `github.com/subosito/gotenv`. The `coverage.*` and `.env` ignore
+  patterns matched them, so a build from the committed vendor directory could
+  not compile `golang.org/x/text`. The files are committed now, and a closing
+  `!/vendor/**` in `.gitignore` keeps every ignore pattern out of `vendor/`.
+- Added a gitleaks configuration that extends the default rules and skips only
+  gitignored local paths. Its entries for root-level files match only at the
+  repository root, so the vendored files are scanned too.
+- The issue pull from the GitLab and Codeberg mirrors now runs at hours of its
+  own instead of the same four hours as every other repository on the account,
+  where the burst queued other workflows behind it.
+
 ## v0.1.8 — 2026-08-08
 
 Documentation. No code change. Every example in the README was calling an API
