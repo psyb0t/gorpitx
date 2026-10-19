@@ -1,0 +1,23 @@
+title = "gorpitx secret scanning"
+
+[extend]
+useDefault = true
+
+# gitleaks `dir` mode scans the working tree and does not honour .gitignore,
+# so gitignored local paths are named again here. Allowlisting is by path only,
+# never by regex on the matched text.
+[[allowlists]]
+description = "Gitignored local state"
+paths = [
+  '''(^|/)\.vscode(?:/|$)''',
+  '''(^|/)test(?:/|$)''',
+  '''(^|/)\.env$''',
+  '''(^|/)coverage\.[^/]*$''',
+  '''(^|/)coverage-percent\.txt$''',
+  '''(^|/)__pycache__(?:/|$)''',
+  '''(^|/)[^/]*\.out$''',
+  '''(^|/)CLAUDE\.md$''',
+  '''(^|/)\.test[^/]*(?:/|$)''',
+  '''(^|/)research_files(?:/|$)''',
+  '''(^|/)git-update\.sh(?:\.debot)?$''',
+]
