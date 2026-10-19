@@ -10,14 +10,14 @@ useDefault = true
 description = "Gitignored local state"
 paths = [
   '''(^|/)\.vscode(?:/|$)''',
-  '''(^|/)test(?:/|$)''',
-  '''(^|/)\.env$''',
-  '''(^|/)coverage\.[^/]*$''',
-  '''(^|/)coverage-percent\.txt$''',
+  '''^test(?:/|$)''',
+  '''^\.env$''',
+  '''^coverage\.[^/]*$''',
+  '''^coverage-percent\.txt$''',
   '''(^|/)__pycache__(?:/|$)''',
-  '''(^|/)[^/]*\.out$''',
+  '''^[^/]*\.out$''',
   '''(^|/)CLAUDE\.md$''',
-  '''(^|/)\.test[^/]*(?:/|$)''',
+  '''^\.test[^/]*(?:/|$)''',
   '''(^|/)research_files(?:/|$)''',
   '''(^|/)git-update\.sh(?:\.debot)?$''',
 ]
