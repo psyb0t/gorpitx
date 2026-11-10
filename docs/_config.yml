@@ -1,0 +1,51 @@
+title: gorpitx
+tagline: Run rpitx transmitter programs from Go
+description: A Go library that runs rpitx transmitter programs on a Raspberry Pi from JSON arguments, validating every field first, one transmission at a time, with timeouts, graceful stop and output streaming.
+lang: en
+url: https://psyb0t.github.io
+baseurl: /gorpitx
+repository: psyb0t/gorpitx
+author: Ciprian Mandache
+
+remote_theme: just-the-docs/just-the-docs@v0.12.0
+color_scheme: mocha
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-relative-links
+  - jekyll-include-cache
+
+permalink: pretty
+
+relative_links:
+  enabled: true
+  collections: false
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+      seo:
+        type: TechArticle
+
+search:
+  heading_level: 3
+
+aux_links:
+  GitHub:
+    - https://github.com/psyb0t/gorpitx
+aux_links_new_tab: true
+
+nav_external_links:
+  - title: Changelog
+    url: https://github.com/psyb0t/gorpitx/blob/main/CHANGELOG.md
+
+gh_edit_link: true
+gh_edit_link_text: Edit this page on GitHub
+gh_edit_repository: https://github.com/psyb0t/gorpitx
+gh_edit_branch: main
+gh_edit_source: docs
+gh_edit_view_mode: tree

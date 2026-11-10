@@ -5,12 +5,13 @@ coverage.*
 coverage-percent.txt
 __pycache__
 *.out
-CLAUDE.md
 .test*
 research_files
 git-update.sh
 git-update.sh.debot
 .telemetry/
+*.local.json
+.testing/
 
 # Vendored dependencies are committed verbatim; none of the patterns above apply to them.
 !/vendor/**

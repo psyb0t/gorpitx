@@ -2,6 +2,18 @@
 
 All notable changes per release. Versions follow [semver](https://semver.org).
 
+## v0.1.10 — 2026-11-10
+
+- The documentation is published at https://psyb0t.github.io/gorpitx/. The
+  per-module reference, configuration, architecture, errors, troubleshooting
+  and development notes moved there from the README, which now keeps the
+  overview, a quick start and links.
+- CI now builds and tests from the committed `vendor/` directory.
+- A tag push no longer reruns the checks. It waits for the `main` run of the
+  same commit to pass, then cuts the GitHub release.
+- Added Buy Me a Coffee to the funding links, and committed `AGENTS.md` plus
+  project rules in `.agents/rules/` for coding agents.
+
 ## v0.1.9 — 2026-10-19
 
 Repository infrastructure only. No library code changed.

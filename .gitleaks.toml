@@ -16,7 +16,6 @@ paths = [
   '''^coverage-percent\.txt$''',
   '''(^|/)__pycache__(?:/|$)''',
   '''^[^/]*\.out$''',
-  '''(^|/)CLAUDE\.md$''',
   '''^\.test[^/]*(?:/|$)''',
   '''(^|/)research_files(?:/|$)''',
   '''(^|/)\.telemetry(?:/|$)''',
